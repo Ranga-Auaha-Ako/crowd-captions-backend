@@ -5,3 +5,5 @@
 ## Stack
 
 - NodeJS with Express
+
+- Backend members:
