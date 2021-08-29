@@ -6,4 +6,16 @@
 
 - NodeJS with Express
 
-- Backend members:
+### This branch is for express routers and REST API
+
+# UPDATE LOG:
+
+v0.1:
+- restructure the files
+- added npm packages: esm, pg, dotenv, sequlize
+- added .env file for global variables
+- added server.js for all backend codes
+- added folder config
+- added file config.js for database connection
+- changed folder router to routes
+- changed localhost port from 3000 to 4000
