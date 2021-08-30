@@ -19,3 +19,6 @@ v0.1:
 - added file config.js for database connection
 - changed folder router to routes
 - changed localhost port from 3000 to 4000
+
+v0.2:
+- added router draft in router.js
