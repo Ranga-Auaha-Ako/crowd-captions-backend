@@ -22,3 +22,6 @@ v0.1:
 
 v0.2:
 - added router draft in router.js
+
+v0.3:
+- Use Docker & Docker-Compose to manage development environments
