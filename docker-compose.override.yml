@@ -1,0 +1,27 @@
+# Settings for development. Default to insecure (but fine for development) credentials to save setup time
+
+services:
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASS:-crowdcaptions}
+      POSTGRES_DB:  ${POSTGRES_DB:-crowdcaptions}
+      POSTGRES_USER: ${POSTGRES_PASS:-crowdcaptions}
+    volumes:
+      - db-data:/var/lib/postgresql/data
+    ports:
+      - 5432:5432
+
+  backend:
+    environment:
+      POSTGRES_DB:  ${POSTGRES_DB:-crowdcaptions}
+      POSTGRES_USER: ${POSTGRES_PASS:-crowdcaptions}
+      POSTGRES_PASS: ${POSTGRES_PASS:-crowdcaptions}
+      POSTGRES_HOST: ${POSTGRES_HOST:-db}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+    depends_on:
+      - db
+
+volumes:
+  db-data:

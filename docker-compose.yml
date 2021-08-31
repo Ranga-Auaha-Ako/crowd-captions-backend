@@ -1,0 +1,25 @@
+services:
+  backend:
+    restart: always
+    build: backend
+    environment:
+      - NODE_ENV=development
+      - PORT=${PORT:-8000}
+      - POSTGRES_DB
+      - POSTGRES_USER
+      - POSTGRES_PASS
+      - POSTGRES_HOST
+      - POSTGRES_PORT
+    ports:
+      # Access and debug ports
+      - 8000:8000
+      - 9229:9229
+      - 9230:9230
+    volumes:
+      - ./backend/src:/code/src:ro
+      - ./backend/package.json:/code/package.json
+      - ./backend/package-lock.json:/code/package-lock.json
+      - node-modules:/opt/app/node_modules
+
+volumes:
+  node-modules:
