@@ -6,8 +6,6 @@
 
 - NodeJS with Express
 
-### This branch is for express routers and REST API
-
 # UPDATE LOG:
 
 v0.1:
