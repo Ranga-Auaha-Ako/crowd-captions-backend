@@ -1,9 +1,9 @@
 var express = require('express'),
     router = express.Router();
 
-const db = require('./models')
+const db = require('../models')
 
-const { Caption } = require('./models')
+const { Caption } = require('../models')
 
 router.get('/', (req, res) => {
     res.send(`received on port: ${process.env.PORT}`)
