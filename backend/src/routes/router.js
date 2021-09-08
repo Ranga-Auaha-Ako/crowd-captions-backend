@@ -3,16 +3,14 @@ var express = require('express'),
 
 const db = require('../models')
 
-const { Caption } = require('../models')
 
 router.get('/', (req, res) => {
     res.send(`received on port: ${process.env.PORT}`)
 });
 
-router.get('/get-caption', (req, res) => {
-    //check if there is a existing for this caption
-    //get caption by id
-    res.send('caption')
+router.get('/captions', (req, res) => {
+    db.sequelize.CaptionFile.findAll().then((result) => res.json(result))
+
 });
 
 router.post('/new-caption', (req, res) => {
@@ -21,7 +19,7 @@ router.post('/new-caption', (req, res) => {
     Caption.create({
         //create a new caption object
     }).catch((err) => {
-        if(err){
+        if (err) {
             console.log(err);
         }
     });
