@@ -3,13 +3,17 @@ var express = require('express'),
 
 const db = require('../models')
 
+const { CaptionFile, sequelize } = require('../models')
 
-router.get('/', (req, res) => {
+
+router.get('/', async (req, res) => {
+    await sequelize.sync({ force: true });
+
     res.send(`received on port: ${process.env.PORT}`)
 });
 
 router.get('/captions', (req, res) => {
-    db.sequelize.CaptionFile.findAll().then((result) => res.json(result))
+    db.CaptionFile.findAll().then((result) => res.json(result))
 
 });
 
