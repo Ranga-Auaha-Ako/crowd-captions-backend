@@ -1,6 +1,8 @@
 // Import modules
-var express = require('express');
-var router = express.Router();
+const express = require('express');
+const router = express.Router();
+const { Op } = require("sequelize");
+const { v4: uuidv4, parse: uuidParse, stringify: uuidStringify } = require('uuid'); // Use in production
 
 // Import database
 const db = require('../models')
@@ -40,8 +42,39 @@ router.get('/', async (req, res) => {
     res.send(`received on port: ${process.env.PORT}`)
 });
 
-router.get('/captions', (req, res) => {
-    db.CaptionFile.findAll().then((result) => res.json(result))
+router.get('/captions/:lectureId', (req, res) => {
+    db.CaptionSentence.findAll({
+        where: {
+            body: { [Op.endsWith]: req.params.lectureId }
+        }
+    }).then((result) => {
+        if (!result.length) {
+            res.json({
+                error: 404,
+                message: "cannot find caption file"
+            });
+        } else {
+            res.json({
+                Caption_file: result.map(x => {
+                    return {
+                        id: x.id,
+                        start: x.start,
+                        captionSentence: x.body,
+                        edits: {
+                            approved: false,
+                            id: 1,
+                            body: "test",
+                            timestamp: 100000000,
+                            votes: 10,
+                            voted: 0,
+                            reports: 0,
+                            reported: false
+                        }
+                    }
+                })
+            });
+        }
+    })
 });
 
 router.post('/new-caption', (req, res) => {

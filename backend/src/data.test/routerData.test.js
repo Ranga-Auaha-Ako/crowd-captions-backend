@@ -1,21 +1,23 @@
-const { v4: uuidv4 } = require('uuid');
+const { v4: uuidv4, parse: uuidParse, stringify: uuidStringify } = require('uuid');
 
 export const captionFileData = async (captionFile) => {
     for (let i = 0; i < 10; i++) { // Add 10 rows
-        const data = captionFile.build({ lecture_id: uuidv4() });
+        const data = captionFile.build({ lecture_id: (i + 1) * 100 });
         await data.save();
     }
 }
 
 export const captionSentenceData = async (captionSentence) => {
-    for (let i = 0; i < 10; i++) { // Add 10 rows
-        const data = captionSentence.build({
-            position: 1,
-            start: new Date().getTime(),
-            body: "This is a test string"
-        });
+    for (let i = 0; i < 10; i++) { // Add 10 * 10 rows
+        for (let j = 0; j < 10; j++) {
+            const data = captionSentence.build({
+                position: j,
+                start: new Date().getTime(),
+                body: `This is a test string ${(i + 1) * 100}`
+            });
 
-        await data.save();
+            await data.save();
+        }
     }
 }
 
