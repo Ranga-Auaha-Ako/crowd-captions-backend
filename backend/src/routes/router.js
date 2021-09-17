@@ -78,15 +78,36 @@ router.get('/captions/:lectureId', (req, res) => {
 });
 
 router.post('/new-caption', (req, res) => {
+    const lectureId = req.body.lectureId;
+    const editedCaption = req.body.editedCaptionBody;
+    const captionSentenceId = req.body.captionSentenceId;
+
     //if there is no existing caption fot this id
     //create a new caption object in the db with ai generated caption
-    Caption.create({
-        //create a new caption object
-    }).catch((err) => {
-        if (err) {
-            console.log(err);
+    db.CaptionSentence.findAll({
+        where: {
+            id: { [Op.eq]: lectureId }
         }
-    });
+    }).then((result) => {
+        if (!result.length) {
+            // All generated catrion from existing API
+        } else {
+            db.CaptionSentence.update(
+                { body: editedCaption },
+                {
+                    where: {
+                        id: { [Op.eq]: lectureId }
+                    }
+                }
+            ).then(() => {
+                res.json({
+                    lectureId: lectureId,
+                    editedCaption: editedCaption,
+                    captionSentenceId: captionSentenceId
+                });
+            })
+        }
+    })
 });
 
 router.put('/changed-caption', (req, res) => {
