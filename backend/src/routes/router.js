@@ -174,4 +174,34 @@ router.post('/down-vote', (req, res) => {
     });
 });
 
+router.post('/report', (req, res) => {
+    const lectureId = req.body.lectureId;
+    const captionSentenceId = req.body.captionSentenceId;
+    const editId = req.body.editId;
+
+    db.CaptionSentence.findAll({
+        where: {
+            id: { [Op.eq]: lectureId }
+        }
+    }).then((result) => {
+        if (result.length) {
+            db.Edit.increment(
+                "reports", {
+                by: 1,
+                where: {
+                    id: { [Op.eq]: editId }
+                }
+            });
+
+            db.Report.build({}).save();
+        }
+
+        res.json({
+            lectureId: lectureId,
+            captionSentenceId: captionSentenceId,
+            editId: editId
+        });
+    });
+});
+
 module.exports = router
