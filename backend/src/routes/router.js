@@ -110,12 +110,36 @@ router.post('/new-caption', (req, res) => {
     })
 });
 
-router.put('/changed-caption', (req, res) => {
-    //update caption under same id
-});
+router.post('/up-vote', (req, res) => {
+    const lectureId = req.body.lectureId;
+    const captionSentenceId = req.body.captionSentenceId;
+    const editId = req.body.editId;
 
-router.put('/up-vote', (req, res) => {
-    //incretment vote for specified caption id and row id
+    db.CaptionSentence.findAll({
+        where: {
+            id: { [Op.eq]: lectureId }
+        }
+    }).then((result) => {
+        if (result.length) {
+            db.Edit.increment(
+                "votes", {
+                by: 1,
+                where: {
+                    id: { [Op.eq]: editId }
+                }
+            });
+
+            db.Vote.build({
+                upvoted: true
+            }).save();
+        }
+
+        res.json({
+            lectureId: lectureId,
+            captionSentenceId: captionSentenceId,
+            editId: editId
+        });
+    });
 });
 
 router.put('/down-vote', (req, res) => {
