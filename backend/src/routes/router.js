@@ -142,8 +142,36 @@ router.post('/up-vote', (req, res) => {
     });
 });
 
-router.put('/down-vote', (req, res) => {
-    //decrease vote for specified caption id and row id
+router.post('/down-vote', (req, res) => {
+    const lectureId = req.body.lectureId;
+    const captionSentenceId = req.body.captionSentenceId;
+    const editId = req.body.editId;
+
+    db.CaptionSentence.findAll({
+        where: {
+            id: { [Op.eq]: lectureId }
+        }
+    }).then((result) => {
+        if (result.length) {
+            db.Edit.decrement(
+                "votes", {
+                by: 1,
+                where: {
+                    id: { [Op.eq]: editId }
+                }
+            });
+
+            db.Vote.build({
+                upvoted: false
+            }).save();
+        }
+
+        res.json({
+            lectureId: lectureId,
+            captionSentenceId: captionSentenceId,
+            editId: editId
+        });
+    });
 });
 
 module.exports = router
