@@ -25,7 +25,8 @@ const {
     editData,
     reportData,
     userData,
-    voteData
+    voteData,
+    createCaption
 } = require("../data.test/routerData.test");
 
 router.get('/', async (req, res) => {
@@ -42,73 +43,44 @@ router.get('/', async (req, res) => {
     res.send(`received on port: ${process.env.PORT}`)
 });
 
-router.get('/captions/:lectureId', (req, res) => {
-    db.CaptionSentence.findAll({
-        where: {
-            body: { [Op.endsWith]: req.params.lectureId }
+router.get('/captions/:lectureId', async(req, res) => {
+    lectureId = req.params.lectureId
+    try{
+        const result = await CaptionFile.findOne({
+            where: {lecture_id: lectureId}
+        })
+        if(!result){
+            await createCaption(CaptionFile, CaptionSentence, lectureId)
         }
-    }).then((result) => {
-        if (!result.length) {
-            res.json({
-                error: 404,
-                message: "cannot find caption file"
-            });
-        } else {
-            res.json({
-                Caption_file: result.map(x => {
-                    return {
-                        id: x.id,
-                        start: x.start,
-                        captionSentence: x.body,
-                        edits: {
-                            approved: false,
-                            id: 1,
-                            body: "test",
-                            timestamp: 100000000,
-                            votes: 10,
-                            voted: 0,
-                            reports: 0,
-                            reported: false
-                        }
+        
+        const caption = await CaptionSentence.findAll({
+            where: {
+                body: { [Op.endsWith]: lectureId}
+            }
+        })
+
+        //const editArr = getEdits(caption, Edit, lectureId)
+
+        res.json({
+            Caption_file:  caption.map(x => {
+                const sentenceEdits = Edit.findOne({
+                    where: {
+                        id: x.id
                     }
                 })
-            });
-        }
-    })
-});
 
-router.post('/new-caption', (req, res) => {
-    const lectureId = req.body.lectureId;
-    const editedCaption = req.body.editedCaptionBody;
-    const captionSentenceId = req.body.captionSentenceId;
-
-    //if there is no existing caption fot this id
-    //create a new caption object in the db with ai generated caption
-    db.CaptionSentence.findAll({
-        where: {
-            id: { [Op.eq]: lectureId }
-        }
-    }).then((result) => {
-        if (!result.length) {
-            // All generated catrion from existing API
-        } else {
-            db.CaptionSentence.update(
-                { body: editedCaption },
-                {
-                    where: {
-                        id: { [Op.eq]: lectureId }
-                    }
+                return {
+                    id: x.id,
+                    start: x.start,
+                    captionSentenceData: x.body,
+                    edits: sentenceEdits.id
                 }
-            ).then(() => {
-                res.json({
-                    lectureId: lectureId,
-                    editedCaption: editedCaption,
-                    captionSentenceId: captionSentenceId
-                });
             })
-        }
-    })
-});
+        })
+    } catch(err){
+        console.log(err)
+    }
+})
 
 router.post('/up-vote', (req, res) => {
     const lectureId = req.body.lectureId;

@@ -7,13 +7,32 @@ export const captionFileData = async (captionFile) => {
     }
 }
 
+export const createCaption = async (captionFile,captionSentence, id) => {
+    const data = captionFile.build({ lecture_id: id });
+    await data.save();
+    for (let j = 0; j < 10; j++) {
+        const data = captionSentence.build({
+            position: j,
+            start: new Date().getTime(),
+            body: `This is a test string ${id}`
+        });
+
+        await data.save();
+    }
+}
+
+export const getEdits = async (sentenceArr, Edit, lectureId) => {
+    
+}
+
 export const captionSentenceData = async (captionSentence) => {
     for (let i = 0; i < 10; i++) { // Add 10 * 10 rows
         for (let j = 0; j < 10; j++) {
             const data = captionSentence.build({
                 position: j,
                 start: new Date().getTime(),
-                body: `This is a test string ${(i + 1) * 100}`
+                body: `This is a test string ${(i + 1) * 100}`,
+                CaptionFileId: (i + 1) * 100
             });
 
             await data.save();
@@ -27,7 +46,8 @@ export const editData = async (edit) => {
             body: "This is a test body",
             approved: false,
             votes: 10,
-            reports: 0
+            reports: 0,
+            CaptionSentenceID: i
         });
 
         await data.save();
