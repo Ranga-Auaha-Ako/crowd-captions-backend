@@ -75,7 +75,7 @@ router.get('/captions/:lectureId', async(req, res) => {
     }
 })
 
-router.get('/edits/:sentenceId', async(req, res) => {
+router.get('/getEdits/:sentenceId', async(req, res) => {
     sentenceId = req.params.sentenceId
     try{
         const result = await Edit.findAll({
@@ -89,25 +89,25 @@ router.get('/edits/:sentenceId', async(req, res) => {
     }
 })
 
-router.post('/submit', async(req, res) => {
+router.post('/submitEdits', async(req, res) => {
     const {sentenceId, body} = req.body
     try{
-        console.log(sentenceId)
         const data = await Edit.build({
             body: `Edit content: ${body}`,
             approved: false,
-            votes: 10,
+            votes: 1,
             reports: 0,
             CaptionSentenceId: sentenceId
         });
         
         await data.save();
+        return res.json(data)
     }catch(err){
         console.log(err)
     }
     
     
-    return res.json(data)
+    
 })
 
 router.post('/up-vote', (req, res) => {
