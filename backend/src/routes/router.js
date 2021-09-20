@@ -62,24 +62,52 @@ router.get('/captions/:lectureId', async(req, res) => {
         //const editArr = getEdits(caption, Edit, lectureId)
 
         res.json({
-            Caption_file:  caption.map(x => {
-                const sentenceEdits = Edit.findOne({
-                    where: {
-                        id: x.id
-                    }
-                })
-
+            Caption_file: caption.map(x => {
                 return {
                     id: x.id,
                     start: x.start,
                     captionSentenceData: x.body,
-                    edits: sentenceEdits.id
                 }
             })
         })
     } catch(err){
         console.log(err)
     }
+})
+
+router.get('/edits/:sentenceId', async(req, res) => {
+    sentenceId = req.params.sentenceId
+    try{
+        const result = await Edit.findAll({
+            where: {
+                CaptionSentenceId: sentenceId
+            }
+        })
+        return res.json(result)
+    }catch(err){
+        console.log(err)
+    }
+})
+
+router.post('/submit', async(req, res) => {
+    const {sentenceId, body} = req.body
+    try{
+        console.log(sentenceId)
+        const data = await Edit.build({
+            body: `Edit content: ${body}`,
+            approved: false,
+            votes: 10,
+            reports: 0,
+            CaptionSentenceId: sentenceId
+        });
+        
+        await data.save();
+    }catch(err){
+        console.log(err)
+    }
+    
+    
+    return res.json(data)
 })
 
 router.post('/up-vote', (req, res) => {

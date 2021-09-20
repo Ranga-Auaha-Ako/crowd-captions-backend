@@ -32,7 +32,6 @@ export const captionSentenceData = async (captionSentence) => {
                 position: j,
                 start: new Date().getTime(),
                 body: `This is a test string ${(i + 1) * 100}`,
-                CaptionFileId: (i + 1) * 100
             });
 
             await data.save();
@@ -43,11 +42,10 @@ export const captionSentenceData = async (captionSentence) => {
 export const editData = async (edit) => {
     for (let i = 0; i < 10; i++) { // Add 10 rows
         const data = edit.build({
-            body: "This is a test body",
+            body: `This is a test body ${i + 1}`,
             approved: false,
             votes: 10,
-            reports: 0,
-            CaptionSentenceID: i
+            reports: 0
         });
 
         await data.save();
