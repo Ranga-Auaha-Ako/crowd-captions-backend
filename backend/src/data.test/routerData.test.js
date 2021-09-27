@@ -1,4 +1,5 @@
-const { v4: uuidv4, parse: uuidParse, stringify: uuidStringify } = require('uuid');
+// Helper
+const getRandomArbitrary = (min, max) => Math.random() * (max - min) + min;
 
 export const captionFileData = async (captionFile) => {
     for (let i = 0; i < 10; i++) { // Add 10 rows
@@ -44,7 +45,7 @@ export const editData = async (edit) => {
         const data = edit.build({
             body: `This is a test body ${i + 1}`,
             approved: false,
-            votes: 10,
+            votes: Math.round(getRandomArbitrary(0, 100)),  // Test, get random number of votes
             reports: 0
         });
 

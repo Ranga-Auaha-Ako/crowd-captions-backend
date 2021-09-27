@@ -83,7 +83,7 @@ router.get('/getEdits/:sentenceId', async(req, res) => {
                 CaptionSentenceId: sentenceId
             }
         })
-        return res.json(result)
+        return res.json(result.sort((x, y) => (x.votes < y.votes) ? 1 : -1));
     }catch(err){
         console.log(err)
     }
