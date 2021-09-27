@@ -78,14 +78,28 @@ router.get('/captions/:lectureId', async(req, res) => {
 router.get('/getEdits/:sentenceId', async(req, res) => {
     sentenceId = req.params.sentenceId
     try{
-        const result = await Edit.findAll({
+        const parentCapiton = await CaptionSentence.findAll({
             where: {
-                CaptionSentenceId: sentenceId
+                id: { [Op.eq]: sentenceId}
             }
-        })
-        return res.json(result.sort((x, y) => (x.votes < y.votes) ? 1 : -1));
-    }catch(err){
-        console.log(err)
+        });
+
+        if (!!parentCapiton.length) {
+            const result = await Edit.findAll({
+                where: {
+                    CaptionSentenceId: sentenceId,
+                    votes: { [Op.gte]: 0},
+                    reports: { [Op.lte]: 3},
+                }
+            });
+    
+            return res.json(result.sort((x, y) => (x.votes < y.votes) ? 1 : -1));
+        } else {
+            res.status(404).send("Capiton not found");
+        }
+
+    } catch(err) {
+        console.log(err);
     }
 })
 
