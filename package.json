@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "mocha",
     "dev": "env NODE_DEV=development nodemon src/index.js"
   },
   "author": "team-skrrt-skrrt",
@@ -17,6 +17,7 @@
     "sequelize": "^6.6.5"
   },
   "devDependencies": {
+    "mocha": "^9.1.2",
     "nodemon": "^2.0.12"
   }
 }
