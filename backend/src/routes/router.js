@@ -76,6 +76,7 @@ router.get('/captions/:lectureId', async(req, res) => {
 })
 
 router.get('/getEdits/:sentenceId', async(req, res) => {
+
     sentenceId = req.params.sentenceId
     try{
         const result = await Edit.findAll({
@@ -83,6 +84,7 @@ router.get('/getEdits/:sentenceId', async(req, res) => {
                 CaptionSentenceId: sentenceId
             }
         })
+
         return res.json(result)
     }catch(err){
         console.log(err)
@@ -99,109 +101,70 @@ router.post('/submitEdits', async(req, res) => {
             reports: 0,
             CaptionSentenceId: sentenceId
         });
-        
         await data.save();
         return res.json(data)
     }catch(err){
         console.log(err)
-    }
-    
-    
-    
+    } 
 })
 
-router.post('/up-vote', (req, res) => {
-    const lectureId = req.body.lectureId;
-    const captionSentenceId = req.body.captionSentenceId;
-    const editId = req.body.editId;
-
-    db.CaptionSentence.findAll({
-        where: {
-            id: { [Op.eq]: lectureId }
-        }
-    }).then((result) => {
-        if (result.length) {
-            db.Edit.increment(
-                "votes", {
-                by: 1,
+router.post('/vote', async(req, res) => {
+    try{
+        const {upvoted, EditId, UserId} = req.body
+        
+        const result = await Vote.findAll({where: {UserId, EditId}})
+        if(result){
+            await Vote.destroy({
                 where: {
-                    id: { [Op.eq]: editId }
+                    UserId,
+                    EditId
                 }
-            });
-
-            db.Vote.build({
-                upvoted: true
-            }).save();
+            })
         }
-
-        res.json({
-            lectureId: lectureId,
-            captionSentenceId: captionSentenceId,
-            editId: editId
+        
+        const data = await Vote.create({
+            upvoted,
+            EditId,
+            UserId
         });
-    });
+        console.log(EditId, UserId)
+        await data.save();
+        return res.json(data)
+    }catch(err){
+        console.log(err)
+    } 
 });
 
-router.post('/down-vote', (req, res) => {
-    const lectureId = req.body.lectureId;
-    const captionSentenceId = req.body.captionSentenceId;
-    const editId = req.body.editId;
-
-    db.CaptionSentence.findAll({
-        where: {
-            id: { [Op.eq]: lectureId }
-        }
-    }).then((result) => {
-        if (result.length) {
-            db.Edit.decrement(
-                "votes", {
-                by: 1,
+router.post('/report', async(req, res) => {
+    try{
+        const {report, EditId, UserId} = req.body
+        
+        const result = await Report.findOne({where: {UserId, EditId}})
+        if(result){
+            console.log(result)
+            await Report.destroy({
                 where: {
-                    id: { [Op.eq]: editId }
+                    UserId,
+                    EditId
                 }
+            })
+            return res.json({
+                message: "report reset"
+            })
+        }
+        else{
+            const data = await Report.create({
+                EditId,
+                UserId
+                
             });
-
-            db.Vote.build({
-                upvoted: false
-            }).save();
+            await data.save();
+            return res.json(data)
         }
-
-        res.json({
-            lectureId: lectureId,
-            captionSentenceId: captionSentenceId,
-            editId: editId
-        });
-    });
-});
-
-router.post('/report', (req, res) => {
-    const lectureId = req.body.lectureId;
-    const captionSentenceId = req.body.captionSentenceId;
-    const editId = req.body.editId;
-
-    db.CaptionSentence.findAll({
-        where: {
-            id: { [Op.eq]: lectureId }
-        }
-    }).then((result) => {
-        if (result.length) {
-            db.Edit.increment(
-                "reports", {
-                by: 1,
-                where: {
-                    id: { [Op.eq]: editId }
-                }
-            });
-
-            db.Report.build({}).save();
-        }
-
-        res.json({
-            lectureId: lectureId,
-            captionSentenceId: captionSentenceId,
-            editId: editId
-        });
-    });
+        
+    }catch(err){
+        console.log(err)
+    } 
 });
 
 module.exports = router

@@ -24,11 +24,6 @@ module.exports = (sequelize, DataTypes) => {
       defaultValue: false,
       allowNull: false
     }, 
-    votes: {
-      type: DataTypes.INTEGER,
-      defaultValue: 1,
-      allowNull: false
-    },
     reports: {
       type: DataTypes.INTEGER,
       defaultValue: 0,
