@@ -1,5 +1,3 @@
-const { v4: uuidv4, parse: uuidParse, stringify: uuidStringify } = require('uuid');
-
 export const captionFileData = async (captionFile) => {
     for (let i = 0; i < 10; i++) { // Add 10 rows
         const data = captionFile.build({ lecture_id: (i + 1) * 100 });
@@ -42,7 +40,6 @@ export const editData = async (edit) => {
         const data = edit.build({
             body: `This is a test body ${i + 1}`,
             approved: false,
-            votes: 10,
             reports: 0,
             CaptionSentenceId: i + 1
         });

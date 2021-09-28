@@ -79,15 +79,28 @@ router.get('/getEdits/:sentenceId', async(req, res) => {
 
     sentenceId = req.params.sentenceId
     try{
-        const result = await Edit.findAll({
+        const parentCapiton = await CaptionSentence.findAll({
             where: {
-                CaptionSentenceId: sentenceId
+                id: { [Op.eq]: sentenceId}
             }
-        })
 
-        return res.json(result)
-    }catch(err){
-        console.log(err)
+        });
+
+        if (!!parentCapiton.length) {
+            const result = await Edit.findAll({
+                where: {
+                    CaptionSentenceId: sentenceId,
+                    reports: { [Op.lte]: 3},
+                }
+            });
+    
+            return res.json(result.sort((x, y) => (x.votes < y.votes) ? 1 : -1));
+        } else {
+            res.status(404).send("Capiton not found");
+        }
+
+    } catch(err) {
+        console.log(err);
     }
 })
 
