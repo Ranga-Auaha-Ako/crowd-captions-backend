@@ -19,11 +19,6 @@ module.exports = (sequelize, DataTypes) => {
     body: {
       type: DataTypes.STRING(200)
     },
-    approved: {
-      type: DataTypes.BOOLEAN,
-      defaultValue: false,
-      allowNull: false
-    }, 
     reports: {
       type: DataTypes.INTEGER,
       defaultValue: 0,

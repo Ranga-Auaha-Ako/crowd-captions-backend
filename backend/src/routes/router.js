@@ -105,12 +105,11 @@ router.get('/getEdits/:sentenceId', async(req, res) => {
 })
 
 router.post('/submitEdits', async(req, res) => {
+    //check if edit exists, if it exist, just update the exist edit tuple
     const {sentenceId, body} = req.body
     try{
         const data = await Edit.build({
             body: `Edit content: ${body}`,
-            approved: false,
-            votes: 1,
             reports: 0,
             CaptionSentenceId: sentenceId
         });
@@ -127,6 +126,7 @@ router.post('/vote', async(req, res) => {
         
         const result = await Vote.findAll({where: {UserId, EditId}})
         if(result){
+            //if the vote exist and have the same value, we can just skip it
             await Vote.destroy({
                 where: {
                     UserId,
@@ -153,6 +153,7 @@ router.post('/report', async(req, res) => {
         const {report, EditId, UserId} = req.body
         
         const result = await Report.findOne({where: {UserId, EditId}})
+        //if the vote exist and have the same value, we can just skip it
         if(result){
             console.log(result)
             await Report.destroy({
