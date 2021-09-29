@@ -76,25 +76,51 @@ router.get('/captions/:lectureId', async(req, res) => {
 })
 
 router.get('/getEdits/:sentenceId', async(req, res) => {
-
-    sentenceId = req.params.sentenceId
+    sentenceId = req.params.sentenceId;
+    
     try{
         const parentCapiton = await CaptionSentence.findAll({
             where: {
-                id: { [Op.eq]: sentenceId}
+                id: { [Op.eq]: sentenceId }
             }
 
         });
 
         if (!!parentCapiton.length) {
-            const result = await Edit.findAll({
+            await Edit.findAll({
                 where: {
                     CaptionSentenceId: sentenceId,
                     reports: { [Op.lte]: 3},
                 }
+            }).then(async (result) => {
+                let toRet = [];
+
+                for (let x = 0; x < result.length; x++) {
+                    const votes = await Vote.findAll({
+                        where: {
+                            EditId: { [Op.eq]: result[x].id }
+                        }
+                    });
+
+                    const upVotes = await votes.filter(x => x.upvoted).length;
+                    const downVotes = await votes.filter(x => !x.upvoted).length;
+
+                    toRet.push({
+                        id: result[x].id,
+                        body: result[x].body,
+                        reports: result[x].reports,
+                        createdAt: result[x].createdAt,
+                        updatedAt: result[x].updatedAt,
+                        CaptionSentenceId: result[x].CaptionSentenceId,
+                        UserId: result[x].UserId,
+                        upVotes: upVotes,
+                        downVotes: downVotes,
+                        votes: upVotes - downVotes
+                    });
+                };
+
+                return res.json(toRet);
             });
-    
-            return res.json(result.sort((x, y) => (x.votes < y.votes) ? 1 : -1));
         } else {
             res.status(404).send("Capiton not found");
         }
