@@ -69,8 +69,8 @@ export const userData = async (user) => {
 export const voteData = async (vote) => {
     for (let i = 0; i < 10; i++) { // Add 10 rows
         const data = vote.build({
-            upvoted: false,
-            EditId: i + 1,
+            upvoted: Math.random() < 0.5,
+            EditId: 1,
             UserId: i + 1
         });
 
