@@ -60,7 +60,62 @@ describe('Get Captions', async () => {
 })
 
 describe('Get Edits', async () => {
-
+    describe('Retrieve edits of a caption', () => {
+        it('send data as per API defn.', () => {
+            assert.strictEqual(true, true)
+        })
+    })
 })
+
+describe('Post Edit', async () => {
+    describe('Edit is too large', () => {
+        it('not store the edit', () => {
+            assert.strictEqual(true, true)
+        })
+    })
+    describe('Normal Edit', () => {
+        it('Store the edit', () => {
+            assert.strictEqual(true, true)
+        })
+    })
+})
+
+describe('Post Vote', async () => {
+    describe('User is upvoting', () => {
+        it('Store vote', () => {
+            assert.strictEqual(true, true)
+        })
+    })
+    describe('User is un-upvoting', () => {
+        it('Remove upvote', () => {
+            assert.strictEqual(true, true)
+        })
+    })
+    describe('User is downvoting', () => {
+        it('Store downvote', () => {
+            assert.strictEqual(true, true)
+        })
+    })
+    describe('User is un-downvoting', () => {
+        it('Remove downvote', () => {
+            assert.strictEqual(true, true)
+        })
+    })
+})
+
+describe('Post Report', async () => {
+    describe('User is reporting', () => {
+        it('Store vote', () => {
+            assert.strictEqual(true, true)
+        })
+    })
+    describe('User is un-reporting', () => {
+        it('Remove existing report', () => {
+            assert.strictEqual(true, true)
+        })
+    })
+})
+
+
 
 
