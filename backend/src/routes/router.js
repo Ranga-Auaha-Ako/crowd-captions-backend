@@ -135,7 +135,7 @@ router.post('/submitEdits', async(req, res) => {
     const {sentenceId, body} = req.body
     try{
         const data = await Edit.build({
-            body: `Edit content: ${body}`,
+            body,
             reports: 0,
             CaptionSentenceId: sentenceId
         });
@@ -218,7 +218,10 @@ router.post('/report', async(req, res) => {
                 
             });
             await data.save();
-            return res.json(data)
+            return res.json({
+                message: "created new report",
+                data
+            })
         }
         
     }catch(err){
