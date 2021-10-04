@@ -1,7 +1,7 @@
 // Import modules
 const express = require('express');
 const router = express.Router();
-const { Op } = require("sequelize");
+const { Op, and } = require("sequelize");
 const { v4: uuidv4, parse: uuidParse, stringify: uuidStringify } = require('uuid'); // Use in production
 
 // Import database
@@ -35,9 +35,9 @@ router.get('/', async (req, res) => {
     // Add mock data
     await captionFileData(CaptionFile);
     await captionSentenceData(CaptionSentence);
+    await userData(User);
     await editData(Edit);
     await reportData(Report);
-    await userData(User);
     await voteData(Vote);
 
     res.send(`received on port: ${process.env.PORT}`)
@@ -81,7 +81,7 @@ router.get('/getEdits/:sentenceId', async(req, res) => {
     try{
         const parentCapiton = await CaptionSentence.findAll({
             where: {
-                id: { [Op.eq]: sentenceId }
+                id: sentenceId 
             }
 
         });
@@ -149,16 +149,31 @@ router.post('/submitEdits', async(req, res) => {
 router.post('/vote', async(req, res) => {
     try{
         const {upvoted, EditId, UserId} = req.body
-        
-        const result = await Vote.findAll({where: {UserId, EditId}})
-        if(result){
+        let update = {upvoted: upvoted}
+        const result = await Vote.findOne({where: {UserId, EditId}})
+        //if the vote exists in the db
+        if(result){   
             //if the vote exist and have the same value, we can just skip it
-            await Vote.destroy({
-                where: {
-                    UserId,
-                    EditId
-                }
-            })
+            if (result.upvoted === upvoted){
+                return res.json({
+                    message: "vote already exist",
+                    result
+                })
+            //else we update the current vote
+            }else{
+                const change = await Vote.update(
+                    update,
+                    {
+                    where: {
+                        UserId,
+                        EditId
+                    }
+                })
+                return res.json({
+                    message: "vote changed",
+                    change
+                })
+            }
         }
         
         const data = await Vote.create({
@@ -166,9 +181,11 @@ router.post('/vote', async(req, res) => {
             EditId,
             UserId
         });
-        console.log(EditId, UserId)
         await data.save();
-        return res.json(data)
+        return res.json({
+            message: "vote created",
+            data
+        })
     }catch(err){
         console.log(err)
     } 
@@ -179,7 +196,7 @@ router.post('/report', async(req, res) => {
         const {report, EditId, UserId} = req.body
         
         const result = await Report.findOne({where: {UserId, EditId}})
-        //if the vote exist and have the same value, we can just skip it
+        //if the vote exist and have the same value, we assume the user wish to undo the report
         if(result){
             console.log(result)
             await Report.destroy({
@@ -189,9 +206,11 @@ router.post('/report', async(req, res) => {
                 }
             })
             return res.json({
-                message: "report reset"
+                message: "undo report",
+                result
             })
         }
+        //create report if it does not exist
         else{
             const data = await Report.create({
                 EditId,

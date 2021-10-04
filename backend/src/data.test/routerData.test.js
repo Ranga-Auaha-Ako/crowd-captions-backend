@@ -41,7 +41,8 @@ export const editData = async (edit) => {
             body: `This is a test body ${i + 1}`,
             approved: false,
             reports: 0,
-            CaptionSentenceId: i + 1
+            CaptionSentenceId: i + 1,
+            UserId: i + 1
         });
 
         await data.save();
@@ -50,7 +51,10 @@ export const editData = async (edit) => {
 
 export const reportData = async (report) => {
     for (let i = 0; i < 10; i++) { // Add 10 rows
-        const data = report.build();
+        const data = report.build({
+            EditId: 1,
+            UserId: i + 1
+        });
         await data.save();
     }
 }
