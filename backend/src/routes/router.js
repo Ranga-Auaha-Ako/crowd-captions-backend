@@ -54,13 +54,13 @@ router.get("/captions/:lectureId", async (req, res) => {
       await createCaption(CaptionFile, CaptionSentence, lectureId);
     }
 
+    console.log(result.lecture_id);
+
     const caption = await CaptionSentence.findAll({
       where: {
-        body: { [Op.endsWith]: lectureId },
+        CaptionFileId: { [Op.eq]: result.lecture_id },
       },
     });
-
-    //const editArr = getEdits(caption, Edit, lectureId)
 
     res.json({
       Caption_file: caption.map((x) => {
