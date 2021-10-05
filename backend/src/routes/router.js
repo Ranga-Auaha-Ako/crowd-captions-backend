@@ -1,11 +1,12 @@
 // Import modules
-const express = require('express');
+const express = require("express");
+const axios = require("axios");
+const qs = require('qs');
 const router = express.Router();
-const { Op, and } = require("sequelize");
-const { v4: uuidv4, parse: uuidParse, stringify: uuidStringify } = require('uuid'); // Use in production
+const { Op } = require("sequelize");
 
 // Import database
-const db = require('../models')
+const db = require("../models")
 
 // Import models
 const {
@@ -16,7 +17,7 @@ const {
     Report,
     User,
     Vote
-} = require('../models')
+} = require("../models")
 
 // Import mock data functions
 const {
@@ -29,7 +30,7 @@ const {
     createCaption
 } = require("../data.test/routerData.test");
 
-router.get('/', async (req, res) => {
+router.get("/", async (req, res) => {
     await sequelize.sync({ force: true });
 
     // Add mock data
@@ -43,7 +44,7 @@ router.get('/', async (req, res) => {
     res.send(`received on port: ${process.env.PORT}`)
 });
 
-router.get('/captions/:lectureId', async(req, res) => {
+router.get("/captions/:lectureId", async(req, res) => {
     lectureId = req.params.lectureId
     try{
         const result = await CaptionFile.findOne({
@@ -75,7 +76,7 @@ router.get('/captions/:lectureId', async(req, res) => {
     }
 })
 
-router.get('/getEdits/:sentenceId', async(req, res) => {
+router.get("/getEdits/:sentenceId", async(req, res) => {
     sentenceId = req.params.sentenceId;
     
     try{
@@ -130,7 +131,7 @@ router.get('/getEdits/:sentenceId', async(req, res) => {
     }
 })
 
-router.post('/submitEdits', async(req, res) => {
+router.post("/submitEdits", async(req, res) => {
     //check if edit exists, if it exist, just update the exist edit tuple
     const {sentenceId, body} = req.body
     try{
@@ -146,7 +147,7 @@ router.post('/submitEdits', async(req, res) => {
     } 
 })
 
-router.post('/vote', async(req, res) => {
+router.post("/vote", async(req, res) => {
     try{
         const {upvoted, EditId, UserId} = req.body
         let update = {upvoted: upvoted}
@@ -191,7 +192,7 @@ router.post('/vote', async(req, res) => {
     } 
 });
 
-router.post('/report', async(req, res) => {
+router.post("/report", async(req, res) => {
     try{
         const {report, EditId, UserId} = req.body
         
@@ -227,6 +228,79 @@ router.post('/report', async(req, res) => {
     }catch(err){
         console.log(err)
     } 
+});
+
+router.get("/testaxios", async (req, res) => {
+    const panoptoEndpoint = "aucklandtest.au.panopto.com";
+    const username = "crowdcaptions-admin";
+    const password = "#/Qr/z66uj,X*#{L";
+    const clientId = "868ede9d-5a14-4007-878e-adb800124a21";
+    const clientSecret = "iYRfx3Zged24KjbuPf2d2fBQuV00LUtYxVF9FYCTBYg=";
+    const auth = "Basic " + Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
+    const authData = qs.stringify({
+        "grant_type": "password",
+        "username": username,
+        "password": password,
+        "scope": "api openid" 
+    });
+    
+    const authConfig = {
+        method: "post",
+        url: `https://${panoptoEndpoint}/Panopto/oauth2/connect/token`,
+        headers: { 
+          "Content-Type": "application/x-www-form-urlencoded", 
+          "Authorization": auth, 
+        },
+        data : authData
+    };
+      
+    axios(authConfig)
+    .then(response => {
+        const token = response.data.access_token;
+
+        const getCookieConfig = {
+            method: 'get',
+            url: 'https://aucklandtest.au.panopto.com/Panopto/api/v1/auth/legacyLogin',
+            headers: { 
+              'Authorization': `Bearer ${token}`
+            }
+          };
+          
+          axios(getCookieConfig)
+          .then(response => {
+              const cookie1 = response.headers["set-cookie"][0];
+              const cookie2 = response.headers["set-cookie"][1];
+
+              let getSrtConfig = {
+                method: "get",
+                url: `https://${panoptoEndpoint}/Panopto/Pages/Transcription/GenerateSRT.ashx?id=9592f9fc-0af4-49b8-9e38-ad6b004d17df&language=0`,
+                headers: {
+                    "authority": panoptoEndpoint, 
+                    "cache-control": "max-age=0",
+                    "sec-ch-ua-mobile": "?0",
+                    "upgrade-insecure-requests": "1", 
+                    "accept": "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9", 
+                    "sec-fetch-site": "none", 
+                    "sec-fetch-mode": "navigate", 
+                    "sec-fetch-user": "?1", 
+                    "sec-fetch-dest": "document", 
+                    "accept-language": "en-US,en;q=0.9", 
+                    "cookie": cookie1
+                }
+            };
+            
+            axios(getSrtConfig)
+            .then(response => {
+                console.log(response.data);
+                res.json(123);
+            });
+
+          })
+
+
+        
+    });
 });
 
 module.exports = router
