@@ -17,6 +17,7 @@ module.exports = (sequelize, DataTypes) => {
       lecture_id: {
         type: DataTypes.STRING(100),
         allowNull: false,
+        primaryKey: true
       },
     },
     {
