@@ -16,8 +16,9 @@ module.exports = (sequelize, DataTypes) => {
   };
   CaptionFile.init({
     lecture_id: {
-      type: DataTypes.UUID,
-      allowNull: false
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      primaryKey: true
     }
   }, {
     sequelize,

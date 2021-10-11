@@ -2,7 +2,7 @@
   "name": "team10-backend",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "server.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "dev": "env NODE_DEV=development nodemon src/index.js"
@@ -10,13 +10,16 @@
   "author": "team-skrrt-skrrt",
   "license": "MIT",
   "dependencies": {
+    "axios": "^0.22.0",
     "dotenv": "^10.0.0",
     "esm": "^3.2.25",
     "express": "^4.17.1",
     "pg": "^8.7.1",
+    "pg-hstore": "^2.3.4",
     "sequelize": "^6.6.5"
   },
   "devDependencies": {
-    "nodemon": "^2.0.12"
+    "nodemon": "^2.0.12",
+    "sequelize-cli": "^6.2.0"
   }
 }
