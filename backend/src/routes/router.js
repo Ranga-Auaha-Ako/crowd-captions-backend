@@ -4,9 +4,13 @@ const axios = require("axios");
 const qs = require("qs");
 const router = express.Router();
 const { Op } = require("sequelize");
+const { default: srtParser2 } = require("srt-parser-2");
 
 // Import database
 const db = require("../models");
+
+// Import helper
+const { getTimeFromStart } = require("../helper/getTimeFromStart");
 
 // Import models
 const {
@@ -44,6 +48,7 @@ router.get("/", async (req, res) => {
   res.send(`received on port: ${process.env.PORT}`);
 });
 
+// Test with id: 9592f9fc-0af4-49b8-9e38-ad6b004d17df
 router.get("/captions/:lectureId", async (req, res) => {
   lectureId = req.params.lectureId;
   try {
@@ -51,14 +56,100 @@ router.get("/captions/:lectureId", async (req, res) => {
       where: { lecture_id: lectureId },
     });
     if (!result) {
-      await createCaption(CaptionFile, CaptionSentence, lectureId);
-    }
+      let parser = new srtParser2();
 
-    console.log(result.lecture_id);
+      const panoptoEndpoint = "aucklandtest.au.panopto.com";
+      const username = "crowdcaptions-admin";
+      const password = "#/Qr/z66uj,X*#{L";
+      const clientId = "868ede9d-5a14-4007-878e-adb800124a21";
+      const clientSecret = "iYRfx3Zged24KjbuPf2d2fBQuV00LUtYxVF9FYCTBYg=";
+      const auth =
+        "Basic " +
+        Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+
+      const authData = qs.stringify({
+        grant_type: "password",
+        username: username,
+        password: password,
+        scope: "api openid",
+      });
+
+      const authConfig = {
+        method: "post",
+        url: `https://${panoptoEndpoint}/Panopto/oauth2/connect/token`,
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+          Authorization: auth,
+        },
+        data: authData,
+      };
+
+      await axios(authConfig).then(async (response) => {
+        const token = await response.data.access_token;
+
+        const getCookieConfig = {
+          method: "get",
+          url: "https://aucklandtest.au.panopto.com/Panopto/api/v1/auth/legacyLogin",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        };
+
+        await axios(getCookieConfig).then(async (response) => {
+          const cookie1 = await response.headers["set-cookie"][0];
+          const cookie2 = await response.headers["set-cookie"][1];
+
+          let getSrtConfig = {
+            method: "get",
+            url: `https://${panoptoEndpoint}/Panopto/Pages/Transcription/GenerateSRT.ashx?id=${lectureId}&language=0`,
+            headers: {
+              authority: panoptoEndpoint,
+              "cache-control": "max-age=0",
+              "sec-ch-ua-mobile": "?0",
+              "upgrade-insecure-requests": "1",
+              accept:
+                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+              "sec-fetch-site": "none",
+              "sec-fetch-mode": "navigate",
+              "sec-fetch-user": "?1",
+              "sec-fetch-dest": "document",
+              "accept-language": "en-US,en;q=0.9",
+              cookie: `${cookie1} ${cookie2}`,
+            },
+          };
+
+          await axios(getSrtConfig).then(async (response) => {
+            let jsonSrt = await parser.fromSrt(response.data);
+
+            // Check if the file exsits
+            if (jsonSrt) {
+              // First save lecture information in captionFiles table
+              const lectureData = CaptionFile.build({
+                lecture_id: lectureId,
+              });
+
+              await lectureData.save();
+
+              // Then save lecture captions information in captionSentences table
+              await jsonSrt.forEach(async (sentence) => {
+                const sentenceData = CaptionSentence.build({
+                  position: sentence.id,
+                  start: getTimeFromStart(sentence.startTime),
+                  body: sentence.text,
+                  CaptionFileLectureId: lectureId,
+                });
+
+                await sentenceData.save();
+              });
+            }
+          });
+        });
+      });
+    }
 
     const caption = await CaptionSentence.findAll({
       where: {
-        CaptionFileId: { [Op.eq]: result.lecture_id },
+        CaptionFileLectureId: { [Op.eq]: lectureId },
       },
     });
 
@@ -222,74 +313,6 @@ router.post("/report", async (req, res) => {
   } catch (err) {
     console.log(err);
   }
-});
-
-router.get("/testaxios", async (req, res) => {
-  const panoptoEndpoint = "aucklandtest.au.panopto.com";
-  const username = "crowdcaptions-admin";
-  const password = "#/Qr/z66uj,X*#{L";
-  const clientId = "868ede9d-5a14-4007-878e-adb800124a21";
-  const clientSecret = "iYRfx3Zged24KjbuPf2d2fBQuV00LUtYxVF9FYCTBYg=";
-  const auth =
-    "Basic " + Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-
-  const authData = qs.stringify({
-    grant_type: "password",
-    username: username,
-    password: password,
-    scope: "api openid",
-  });
-
-  const authConfig = {
-    method: "post",
-    url: `https://${panoptoEndpoint}/Panopto/oauth2/connect/token`,
-    headers: {
-      "Content-Type": "application/x-www-form-urlencoded",
-      Authorization: auth,
-    },
-    data: authData,
-  };
-
-  axios(authConfig).then((response) => {
-    const token = response.data.access_token;
-
-    const getCookieConfig = {
-      method: "get",
-      url: "https://aucklandtest.au.panopto.com/Panopto/api/v1/auth/legacyLogin",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    };
-
-    axios(getCookieConfig).then((response) => {
-      const cookie1 = response.headers["set-cookie"][0];
-      const cookie2 = response.headers["set-cookie"][1];
-
-      let getSrtConfig = {
-        method: "get",
-        url: `https://${panoptoEndpoint}/Panopto/Pages/Transcription/GenerateSRT.ashx?id=9592f9fc-0af4-49b8-9e38-ad6b004d17df&language=0`,
-        headers: {
-          authority: panoptoEndpoint,
-          "cache-control": "max-age=0",
-          "sec-ch-ua-mobile": "?0",
-          "upgrade-insecure-requests": "1",
-          accept:
-            "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-          "sec-fetch-site": "none",
-          "sec-fetch-mode": "navigate",
-          "sec-fetch-user": "?1",
-          "sec-fetch-dest": "document",
-          "accept-language": "en-US,en;q=0.9",
-          cookie: `${cookie1} ${cookie2}`,
-        },
-      };
-
-      axios(getSrtConfig).then((response) => {
-        console.log(response.data);
-        res.json(123);
-      });
-    });
-  });
 });
 
 module.exports = router;
