@@ -1,7 +1,9 @@
 export const captionFileData = async (captionFile) => {
   for (let i = 0; i < 10; i++) {
     // Add 10 rows
-    const data = captionFile.build({ lecture_id: (i + 1) * 100 });
+    const data = captionFile.build({
+      lecture_id: `${(i + 1) * 100} - ${(i + 1) * 100}`,
+    });
     await data.save();
   }
 };
@@ -29,7 +31,7 @@ export const captionSentenceData = async (captionSentence) => {
         position: j,
         start: new Date().getTime(),
         body: `This is a test string ${(i + 1) * 100}`,
-        CaptionFileId: `test${i + 1}`,
+        CaptionFileLectureId: `${(i + 1) * 100} - ${(i + 1) * 100}`,
       });
 
       await data.save();

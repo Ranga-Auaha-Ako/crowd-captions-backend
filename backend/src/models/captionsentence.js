@@ -9,7 +9,6 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate({ CaptionFile, Edit }) {
       // define association here
-      this.belongsTo(CaptionFile, {foreignKey: 'lecture_id'});
       this.hasMany(Edit);
     }
   }
