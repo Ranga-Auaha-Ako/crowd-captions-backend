@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
         type: DataTypes.INTEGER,
         allowNull: false,
       },
+      // Milliseconds from the start of the video
       start: {
         type: DataTypes.DOUBLE,
         allowNull: false,
