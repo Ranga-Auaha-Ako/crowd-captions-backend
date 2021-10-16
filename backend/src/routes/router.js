@@ -161,6 +161,7 @@ router.get("/captions/:lectureId", async (req, res) => {
           id: x.id,
           start: x.start,
           captionSentenceData: x.body,
+          edits: []
         };
       }),
     });
