@@ -6,7 +6,11 @@ module.exports = {
         password: "crowdcaptions",
         host: process.env.POSTGRES_HOST,
         port: process.env.POSTGRES_PORT,
-        dialect: 'postgres'
+        dialect: 'postgres',
+        panopto_username: process.env.panopto_username,
+        panopto_password: process.env.panopto_password,
+        panopto_clientId: process.env.panopto_clientId,
+        panopto_clientSecret: process.env.panopto_clientSecret
     },
     production: {
         database: {

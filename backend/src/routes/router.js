@@ -60,10 +60,11 @@ router.get("/captions/:lectureId", async (req, res) => {
       let parser = new srtParser2();
 
       const panoptoEndpoint = "aucklandtest.au.panopto.com";
-      const username = "crowdcaptions-admin";
-      const password = "#/Qr/z66uj,X*#{L";
-      const clientId = "868ede9d-5a14-4007-878e-adb800124a21";
-      const clientSecret = "iYRfx3Zged24KjbuPf2d2fBQuV00LUtYxVF9FYCTBYg=";
+      const username = process.env.panopto_username;
+      const password = process.env.panopto_password;
+      const clientId = process.env.panopto_clientId;
+      const clientSecret = process.env.panopto_clientSecret;
+      console.log(username, password, clientId, clientSecret)
       const auth =
         "Basic " +
         Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
