@@ -55,6 +55,7 @@ router.get("/captions/:lectureId", async (req, res) => {
     const result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
     });
+    console.log(result)
     if (!result) {
       let parser = new srtParser2();
 
@@ -168,6 +169,7 @@ router.get("/captions/:lectureId", async (req, res) => {
 });
 
 router.get("/getEdits/:sentenceId", async (req, res) => {
+  console.log("test")
   sentenceId = req.params.sentenceId;
 
   try {

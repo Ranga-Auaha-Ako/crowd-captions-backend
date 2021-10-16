@@ -9,6 +9,7 @@ module.exports = (sequelize, DataTypes) => {
      */
     static associate({ CaptionFile, Edit }) {
       // define association here
+      this.belongsTo(CaptionFile)
       this.hasMany(Edit);
     }
   }
