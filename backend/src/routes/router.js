@@ -226,12 +226,18 @@ router.get("/getEdits/:sentenceId", async (req, res) => {
 
 router.post("/submitEdits", async (req, res) => {
   //check if edit exists, if it exist, just update the exist edit tuple
-  const { sentenceId, body } = req.body;
+  const { sentenceId, body, upi } = req.body;
   try {
+    let checkUser = await User.findOne({where: {upi: upi}})
+    if (checkUser == null) {
+      checkUser = await User.create({upi})
+    }
+    console.log(checkUser["dataValues"]["id"])
     const data = await Edit.build({
       body,
       reports: 0,
       CaptionSentenceId: sentenceId,
+      UserId: checkUser["dataValues"]["id"]
     });
     await data.save();
     return res.json(data);
