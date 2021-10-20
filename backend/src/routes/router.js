@@ -160,7 +160,7 @@ router.get("/captions/:lectureId", async (req, res) => {
         return {
           id: x.id,
           start: x.start,
-          captionSentenceData: x.body,
+          body: x.body,
           edits: []
         };
       }),
