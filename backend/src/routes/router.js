@@ -170,7 +170,7 @@ router.get("/captions/:lectureId", async (req, res) => {
   }
 });
 
-router.get("/getEdits/:sentenceId", async (req, res) => {
+router.get("/edits/:sentenceId", async (req, res) => {
   console.log("test")
   sentenceId = req.params.sentenceId;
 
@@ -224,7 +224,7 @@ router.get("/getEdits/:sentenceId", async (req, res) => {
   }
 });
 
-router.post("/submitEdits", async (req, res) => {
+router.post("/edit", async (req, res) => {
   //check if edit exists, if it exist, just update the exist edit tuple
   const { sentenceId, body, upi } = req.body;
   try {
