@@ -170,9 +170,9 @@ router.get("/captions/:lectureId", async (req, res) => {
   }
 });
 
-router.get("/edits/:sentenceId", async (req, res) => {
-  console.log("test")
-  sentenceId = req.params.sentenceId;
+router.get("/edits/:sentenceId/:upi", async (req, res) => {
+  let sentenceId = req.params.sentenceId
+  let upi = req.params.upi
 
   try {
     const parentCapiton = await CaptionSentence.findAll({
@@ -196,9 +196,18 @@ router.get("/edits/:sentenceId", async (req, res) => {
               EditId: { [Op.eq]: result[x].id },
             },
           });
+          let hasUserUpVoted = null
+
+          for (let i=0; i<votes.length; i++) {
+            if (upi == votes[i]["dataValues"]["UserUpi"]) {
+              hasUserUpVoted = votes[i]["dataValues"]["upvoted"]
+            }
+            console.log(votes[i] ) //["dataValues"]["upvoted"]
+          }
 
           const upVotes = await votes.filter((x) => x.upvoted).length;
           const downVotes = await votes.filter((x) => !x.upvoted).length;
+
 
           toRet.push({
             id: result[x].id,
@@ -208,6 +217,8 @@ router.get("/edits/:sentenceId", async (req, res) => {
             updatedAt: result[x].updatedAt,
             CaptionSentenceId: result[x].CaptionSentenceId,
             UserId: result[x].UserId,
+            upvoted: hasUserUpVoted,
+            reported: null,
             upVotes: upVotes,
             downVotes: downVotes,
             votes: upVotes - downVotes,
@@ -243,28 +254,30 @@ router.post("/edit", async (req, res) => {
     return res.json(data);
   } catch (err) {
     console.log(err);
+    return res.status(404).send("Caption Sentence does not exist")
   }
 });
 
 router.post("/vote", async (req, res) => {
   try {
-    const { upvoted, EditId, UserId } = req.body;
+    const { upvoted, EditId, upi } = req.body;
     let update = { upvoted: upvoted };
-    const result = await Vote.findOne({ where: { UserId, EditId } });
+    console.log(upvoted, EditId, upi)
+    const result = await Vote.findOne({ where: { UserUpi: upi, EditId } });
     //if the vote exists in the db
     if (result) {
       //if the vote exist and have the same value, we can just skip it
-      if (result.upvoted === upvoted) {
+      if (result["dataValues"]["upvoted"] == (upvoted === 'true')) {
+        Vote.destroy({ where: { EditId, UserUpi: upi } })
         return res.json({
-          message: "vote already exist",
-          result,
+          message: "vote removed"
         });
         //else we update the current vote
       } else {
         const change = await Vote.update(update, {
           where: {
-            UserId,
             EditId,
+            UserUpi: upi,
           },
         });
         return res.json({
@@ -277,7 +290,7 @@ router.post("/vote", async (req, res) => {
     const data = await Vote.create({
       upvoted,
       EditId,
-      UserId,
+      UserUpi: upi,
     });
     await data.save();
     return res.json({

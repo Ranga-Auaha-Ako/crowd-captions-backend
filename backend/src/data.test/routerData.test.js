@@ -68,7 +68,7 @@ export const userData = async (user) => {
     // Add 10 rows
     const data = user.build({
       access: 1,
-      upi: "abc123",
+      upi: "abc123" + i,
     });
 
     await data.save();
