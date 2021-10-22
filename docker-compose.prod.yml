@@ -1,7 +1,8 @@
-backend:
-  ports:
-    - 80:80
-  environment:
-    PRODUCTION: 'true'
-    NODE_ENV: production
-    PORT: 80
+services:
+  backend:
+    ports:
+      - 80:80
+    environment:
+      PRODUCTION: 'true'
+      NODE_ENV: production
+      PORT: 80
