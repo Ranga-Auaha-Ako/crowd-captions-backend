@@ -95,7 +95,13 @@ export const postEdits = async (sentenceId, body, upi, res) => {
       CaptionSentenceId: sentenceId,
       UserId: checkUser["dataValues"]["id"]
     });
-    await data.save();
+    await data.save().then(d => {
+      Vote.create({
+        upvoted: true,
+        EditId: d["dataValues"]["id"],
+        UserUpi: upi,
+      });
+    });
     return res.json(data);
   } catch (err) {
     console.log(err);
