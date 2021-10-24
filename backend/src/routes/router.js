@@ -45,7 +45,7 @@ const {
   postEdits,
   postVotes,
   postReports,
-} = require('../controller/endPoints');
+} = require("../controller/endPoints");
 
 //handle request which access to root
 router.get('/', async (req, res) => {
@@ -72,7 +72,6 @@ router.get('/captions/:lectureId', async (req, res) => {
       where: { lecture_id: lectureId },
     });
     console.log(result);
-    //call Panopto API for a AI generated caption file if theres no file in the database
     if (!result) {
       let parser = new srtParser2();
 
@@ -173,15 +172,37 @@ router.get('/captions/:lectureId', async (req, res) => {
       },
     });
 
-    res.json({
-      Caption_file: caption.map((x) => {
-        return {
-          id: x.id,
-          start: x.start,
-          body: x.body,
-          edits: [],
-        };
-      }),
+    let toRet = [];
+    let len = caption.length - 1;
+
+    await caption.forEach(async (x, i) => {
+      const votes = await Vote.findAll({
+        where: {
+          EditId: { [Op.eq]: x.id },
+        },
+      });
+
+      const upVotes = await votes.filter((x) => x.upvoted).length;
+      const downVotes = await votes.filter((x) => !x.upvoted).length;
+
+      let y = await {
+        id: await x.id,
+        start: await x.start,
+        body: await x.body,
+        edits: await {
+          id: await x.id,
+          body: await x.body,
+          UserId: await x.UserId,
+          votes: (await upVotes) - downVotes,
+          reported: await null,
+          createdAt: await x.createdAt,
+          updatedAt: await x.updatedAt,
+        },
+      };
+
+      await toRet.push(y);
+
+      if (i == len) res.json(toRet);
     });
   } catch (err) {
     console.log(err);
@@ -189,7 +210,7 @@ router.get('/captions/:lectureId', async (req, res) => {
 });
 
 //query the edits of one sentence
-router.get('/edits/:sentenceId/:upi', async (req, res) => {
+router.get("/edits/:sentenceId/:upi", async (req, res) => {
   let { sentenceId, upi } = req.params;
 
   await getEdits(sentenceId, upi, res);
