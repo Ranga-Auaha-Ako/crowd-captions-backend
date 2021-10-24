@@ -1,18 +1,23 @@
+/*
+This file contains all the end points, each will calls a function in controller/endPoints.js
+for data processing, database accessing and modification
+*/
+
 // Import modules
-const express = require("express");
-const axios = require("axios");
-const qs = require("qs");
+const express = require('express');
+const axios = require('axios');
+const qs = require('qs');
 const router = express.Router();
-const { Op } = require("sequelize");
-const { default: srtParser2 } = require("srt-parser-2");
+const { Op } = require('sequelize');
+const { default: srtParser2 } = require('srt-parser-2');
 
 // Import database
-const db = require("../models");
+const db = require('../models');
 
 // Import helper
-const { getTimeFromStart } = require("../helper/getTimeFromStart");
+const { getTimeFromStart } = require('../helper/getTimeFromStart');
 
-// Import models
+// Import models as database relations
 const {
   sequelize,
   CaptionFile,
@@ -21,9 +26,9 @@ const {
   Report,
   User,
   Vote,
-} = require("../models");
+} = require('../models');
 
-// Import mock data functions
+// Import mock data functions fron routerData
 const {
   captionFileData,
   captionSentenceData,
@@ -32,20 +37,21 @@ const {
   userData,
   voteData,
   createCaption,
-} = require("../data.test/routerData.test");
+} = require('../data.test/routerData.test');
 
-// Import controller
+// Import controller from endPoints
 const {
   getEdits,
   postEdits,
   postVotes,
-  postReports
-} = require("../controller/endPoints")
+  postReports,
+} = require('../controller/endPoints');
 
-router.get("/", async (req, res) => {
+//handle request which access to root
+router.get('/', async (req, res) => {
   await sequelize.sync({ force: true });
 
-  // Add mock data
+  // populate the database with mock data, for testing purpose
   await captionFileData(CaptionFile);
   await captionSentenceData(CaptionSentence);
   await userData(User);
@@ -57,38 +63,41 @@ router.get("/", async (req, res) => {
 });
 
 // Test with id: 9592f9fc-0af4-49b8-9e38-ad6b004d17df
-router.get("/captions/:lectureId", async (req, res) => {
+//handle request for the access to a lecture's caption
+router.get('/captions/:lectureId', async (req, res) => {
   lectureId = req.params.lectureId;
+  //attempt to locate the caption file in the database
   try {
     const result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
     });
-    console.log(result)
+    console.log(result);
+    //call Panopto API for a AI generated caption file if theres no file in the database
     if (!result) {
       let parser = new srtParser2();
 
-      const panoptoEndpoint = "aucklandtest.au.panopto.com";
+      const panoptoEndpoint = 'aucklandtest.au.panopto.com';
       const username = process.env.panopto_username;
       const password = process.env.panopto_password;
       const clientId = process.env.panopto_clientId;
       const clientSecret = process.env.panopto_clientSecret;
-      console.log(username, password, clientId, clientSecret)
+      console.log(username, password, clientId, clientSecret);
       const auth =
-        "Basic " +
-        Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
+        'Basic ' +
+        Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 
       const authData = qs.stringify({
-        grant_type: "password",
+        grant_type: 'password',
         username: username,
         password: password,
-        scope: "api openid",
+        scope: 'api openid',
       });
 
       const authConfig = {
-        method: "post",
+        method: 'post',
         url: `https://${panoptoEndpoint}/Panopto/oauth2/connect/token`,
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          'Content-Type': 'application/x-www-form-urlencoded',
           Authorization: auth,
         },
         data: authData,
@@ -98,32 +107,32 @@ router.get("/captions/:lectureId", async (req, res) => {
         const token = await response.data.access_token;
 
         const getCookieConfig = {
-          method: "get",
-          url: "https://aucklandtest.au.panopto.com/Panopto/api/v1/auth/legacyLogin",
+          method: 'get',
+          url: 'https://aucklandtest.au.panopto.com/Panopto/api/v1/auth/legacyLogin',
           headers: {
             Authorization: `Bearer ${token}`,
           },
         };
 
         await axios(getCookieConfig).then(async (response) => {
-          const cookie1 = await response.headers["set-cookie"][0];
-          const cookie2 = await response.headers["set-cookie"][1];
+          const cookie1 = await response.headers['set-cookie'][0];
+          const cookie2 = await response.headers['set-cookie'][1];
 
           let getSrtConfig = {
-            method: "get",
+            method: 'get',
             url: `https://${panoptoEndpoint}/Panopto/Pages/Transcription/GenerateSRT.ashx?id=${lectureId}&language=0`,
             headers: {
               authority: panoptoEndpoint,
-              "cache-control": "max-age=0",
-              "sec-ch-ua-mobile": "?0",
-              "upgrade-insecure-requests": "1",
+              'cache-control': 'max-age=0',
+              'sec-ch-ua-mobile': '?0',
+              'upgrade-insecure-requests': '1',
               accept:
-                "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-              "sec-fetch-site": "none",
-              "sec-fetch-mode": "navigate",
-              "sec-fetch-user": "?1",
-              "sec-fetch-dest": "document",
-              "accept-language": "en-US,en;q=0.9",
+                'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
+              'sec-fetch-site': 'none',
+              'sec-fetch-mode': 'navigate',
+              'sec-fetch-user': '?1',
+              'sec-fetch-dest': 'document',
+              'accept-language': 'en-US,en;q=0.9',
               cookie: `${cookie1} ${cookie2}`,
             },
           };
@@ -157,6 +166,7 @@ router.get("/captions/:lectureId", async (req, res) => {
       });
     }
 
+    //return all the caption sentences with its best edits
     const caption = await CaptionSentence.findAll({
       where: {
         CaptionFileLectureId: { [Op.eq]: lectureId },
@@ -169,7 +179,7 @@ router.get("/captions/:lectureId", async (req, res) => {
           id: x.id,
           start: x.start,
           body: x.body,
-          edits: []
+          edits: [],
         };
       }),
     });
@@ -179,30 +189,30 @@ router.get("/captions/:lectureId", async (req, res) => {
 });
 
 //query the edits of one sentence
-router.get("/edits/:sentenceId/:upi", async (req, res) => {
-  let {sentenceId, upi} = req.params
+router.get('/edits/:sentenceId/:upi', async (req, res) => {
+  let { sentenceId, upi } = req.params;
 
   await getEdits(sentenceId, upi, res);
 });
 
 //insert new edits into the database
-router.post("/edit", async (req, res) => {
+router.post('/edit', async (req, res) => {
   const { sentenceId, body, upi } = req.body;
 
   await postEdits(sentenceId, body, upi, res);
 });
 
 //insert new vote into the database
-router.post("/vote", async (req, res) => {
+router.post('/vote', async (req, res) => {
   const { upvoted, EditId, upi } = req.body;
-  
+
   await postVotes(upvoted, EditId, upi, res);
 });
 
 //insert new report into the database
-router.post("/report", async (req, res) => {
+router.post('/report', async (req, res) => {
   const { report, EditId, UserUpi } = req.body;
-  
+
   await postReports(report, EditId, UserUpi, res);
 });
 

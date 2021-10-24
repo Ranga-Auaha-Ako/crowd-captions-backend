@@ -1,5 +1,11 @@
-const { Op } = require("sequelize");
+/*
+This file contains all the end point functions that is used in router.js
+Those functions handles all the requests from frontend and return results
+*/
 
+const { Op } = require('sequelize');
+
+//import all database as constants
 const {
   sequelize,
   CaptionFile,
@@ -8,119 +14,122 @@ const {
   Report,
   User,
   Vote,
-} = require("../models");
+} = require('../models');
 
-export const getEdits = async(sentenceId, upi, res) => {
-    try {
-      //fetch the parent caption sentence
-        const parentCapiton = await CaptionSentence.findAll({
-          where: {
-            id: sentenceId,
-          },
-        });
-        //check if the parent sentence exist
-        if (!!parentCapiton.length) {
-          await Edit.findAll({
+//function to get exist edits from the database
+export const getEdits = async (sentenceId, upi, res) => {
+  try {
+    //fetch the parent caption sentence
+    const parentCapiton = await CaptionSentence.findAll({
+      where: {
+        id: sentenceId,
+      },
+    });
+    //check if the parent sentence exist
+    if (!!parentCapiton.length) {
+      await Edit.findAll({
+        where: {
+          CaptionSentenceId: sentenceId,
+          reports: { [Op.lte]: 3 },
+        },
+      }).then(async (result) => {
+        let toRet = [];
+
+        //find votes for all the edits
+        for (let x = 0; x < result.length; x++) {
+          const votes = await Vote.findAll({
             where: {
-              CaptionSentenceId: sentenceId,
-              reports: { [Op.lte]: 3 },
+              EditId: { [Op.eq]: result[x].id },
             },
-          }).then(async (result) => {
-            let toRet = [];
-            
-            //find votes for all the edits
-            for (let x = 0; x < result.length; x++) {
-              const votes = await Vote.findAll({
-                where: {
-                  EditId: { [Op.eq]: result[x].id },
-                },
-              });
-              let hasUserUpVoted = null
-    
-              for (let i=0; i<votes.length; i++) {
-                if (upi == votes[i]["dataValues"]["UserUpi"]) {
-                  hasUserUpVoted = votes[i]["dataValues"]["upvoted"]
-                }
-                //console.log(votes[i] ) //["dataValues"]["upvoted"]
-              }
-    
-              const upVotes = await votes.filter((x) => x.upvoted).length;
-              const downVotes = await votes.filter((x) => !x.upvoted).length;
-    
-              //return the result to the front end
-              toRet.push({
-                id: result[x].id,
-                body: result[x].body,
-                reports: result[x].reports,
-                createdAt: result[x].createdAt,
-                updatedAt: result[x].updatedAt,
-                CaptionSentenceId: result[x].CaptionSentenceId,
-                UserId: result[x].UserId,
-                upvoted: hasUserUpVoted,
-                reported: null,
-                upVotes: upVotes,
-                downVotes: downVotes,
-                votes: upVotes - downVotes,
-              });
-            }
-            console.log(toRet)
-            return res.json(toRet);
           });
-        } else {
-          //return error message if code does not run as intended
-          res.status(404).send("Capiton not found");
+          let hasUserUpVoted = null;
+
+          for (let i = 0; i < votes.length; i++) {
+            if (upi == votes[i]['dataValues']['UserUpi']) {
+              hasUserUpVoted = votes[i]['dataValues']['upvoted'];
+            }
+            //console.log(votes[i] ) //["dataValues"]["upvoted"]
+          }
+
+          const upVotes = await votes.filter((x) => x.upvoted).length;
+          const downVotes = await votes.filter((x) => !x.upvoted).length;
+
+          //return the result to the front end
+          toRet.push({
+            id: result[x].id,
+            body: result[x].body,
+            reports: result[x].reports,
+            createdAt: result[x].createdAt,
+            updatedAt: result[x].updatedAt,
+            CaptionSentenceId: result[x].CaptionSentenceId,
+            UserId: result[x].UserId,
+            upvoted: hasUserUpVoted,
+            reported: null,
+            upVotes: upVotes,
+            downVotes: downVotes,
+            votes: upVotes - downVotes,
+          });
         }
-    } catch (err) {
-        console.log(err);
+        console.log(toRet);
+        return res.json(toRet);
+      });
+    } else {
+      //return error message if code does not run as intended
+      res.status(404).send('Capiton not found');
     }
+  } catch (err) {
+    console.log(err);
+  }
 };
 
+//function to insert a new edit into the database
 export const postEdits = async (sentenceId, body, upi, res) => {
   try {
     // check if body is too long
     if (body.length > 200) {
-      return res.send("Edit should be less than 200 chracters")
+      return res.send('Edit should be less than 200 chracters');
     }
     //check if user exist
-    let checkUser = await User.findOne({where: {upi: upi}})
+    let checkUser = await User.findOne({ where: { upi: upi } });
     //create user if user not exist
     if (checkUser == null) {
-      checkUser = await User.create({upi})
+      checkUser = await User.create({ upi });
     }
-    console.log(checkUser["dataValues"]["id"])
+    console.log(checkUser['dataValues']['id']);
     //insert edit
     const data = await Edit.build({
       body,
       reports: 0,
       CaptionSentenceId: sentenceId,
-      UserId: checkUser["dataValues"]["id"]
+      UserId: checkUser['dataValues']['id'],
     });
-    await data.save().then(d => {
+    await data.save().then((d) => {
       Vote.create({
         upvoted: true,
-        EditId: d["dataValues"]["id"],
+        EditId: d['dataValues']['id'],
         UserUpi: upi,
       });
     });
     return res.json(data);
   } catch (err) {
     console.log(err);
-    return res.status(404).send("Caption Sentence does not exist")
+    return res.status(404).send('Caption Sentence does not exist');
   }
 };
 
+//function to create new vote records in the database
 export const postVotes = async (upvoted, EditId, upi, res) => {
   try {
     let update = { upvoted: upvoted };
-    console.log(upvoted, EditId, upi)
+    console.log(upvoted, EditId, upi);
     const result = await Vote.findOne({ where: { UserUpi: upi, EditId } });
     //if the vote exists in the db
     if (result) {
       //if the vote exist and have the same value, we can just remove it
-      if (result["dataValues"]["upvoted"] == (upvoted === 'true')) {
-        Vote.destroy({ where: { EditId, UserUpi: upi } })
+      if (result['dataValues']['upvoted'] == (upvoted === 'true')) {
+        Vote.destroy({ where: { EditId, UserUpi: upi } });
         return res.json({
-          message: "vote removed"
+          message: 'vote removed',
         });
         //else we update the current vote
       } else {
@@ -131,8 +140,8 @@ export const postVotes = async (upvoted, EditId, upi, res) => {
           },
         });
         return res.json({
-          message: "vote changed",
-          change
+          message: 'vote changed',
+          change,
         });
       }
     }
@@ -143,16 +152,17 @@ export const postVotes = async (upvoted, EditId, upi, res) => {
       UserUpi: upi,
     });
     await data.save();
-    console.log(data)
+    console.log(data);
     return res.json({
-      message: "vote created",
-      data
+      message: 'vote created',
+      data,
     });
   } catch (err) {
     console.log(err);
   }
 };
 
+//function to create new report record in the database
 export const postReports = async (upvoted, EditId, UserUpi, res) => {
   try {
     const result = await Report.findOne({ where: { UserUpi, EditId } });
@@ -166,7 +176,7 @@ export const postReports = async (upvoted, EditId, UserUpi, res) => {
         },
       });
       return res.json({
-        message: "undo report",
+        message: 'undo report',
         result,
       });
     }
@@ -178,7 +188,7 @@ export const postReports = async (upvoted, EditId, UserUpi, res) => {
       });
       await data.save();
       return res.json({
-        message: "created new report",
+        message: 'created new report',
         data,
       });
     }

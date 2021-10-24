@@ -1,3 +1,8 @@
+/*
+This file contains all the functions required for populating the database with mock data
+All functions will be triggered when the root location is accessed
+*/
+
 export const captionFileData = async (captionFile) => {
   for (let i = 0; i < 10; i++) {
     // Add 10 rows
@@ -68,7 +73,7 @@ export const userData = async (user) => {
     // Add 10 rows
     const data = user.build({
       access: 1,
-      upi: "abc123" + i,
+      upi: 'abc123' + i,
     });
 
     await data.save();
