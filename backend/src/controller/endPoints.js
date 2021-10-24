@@ -77,6 +77,10 @@ export const getEdits = async(sentenceId, upi, res) => {
 
 export const postEdits = async (sentenceId, body, upi, res) => {
   try {
+    // check if body is too long
+    if (body.length > 200) {
+      return res.send("Edit should be less than 200 chracters")
+    }
     //check if user exist
     let checkUser = await User.findOne({where: {upi: upi}})
     //create user if user not exist
