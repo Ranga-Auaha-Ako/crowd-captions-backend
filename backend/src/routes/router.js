@@ -4,18 +4,8 @@ for data processing, database accessing and modification
 */
 
 // Import modules
-const express = require('express');
-const axios = require('axios');
-const qs = require('qs');
+const express = require("express");
 const router = express.Router();
-const { Op } = require('sequelize');
-const { default: srtParser2 } = require('srt-parser-2');
-
-// Import database
-const db = require('../models');
-
-// Import helper
-const { getTimeFromStart } = require('../helper/getTimeFromStart');
 
 // Import models as database relations
 const {
@@ -41,6 +31,7 @@ const {
 
 // Import controller from endPoints
 const {
+  getCaptions,
   getEdits,
   postEdits,
   postVotes,
@@ -63,178 +54,66 @@ router.get('/', async (req, res) => {
 });
 
 // Test with id: 9592f9fc-0af4-49b8-9e38-ad6b004d17df
-//handle request for the access to a lecture's caption
-router.get('/captions/:lectureId', async (req, res) => {
-  lectureId = req.params.lectureId;
-  //attempt to locate the caption file in the database
-  try {
-    const result = await CaptionFile.findOne({
-      where: { lecture_id: lectureId },
-    });
-    console.log(result);
-    if (!result) {
-      let parser = new srtParser2();
+router.get("/captions/:lectureId/:upi", async (req, res) => {
+  let {lectureId, upi} = req.params;
 
-      const panoptoEndpoint = 'aucklandtest.au.panopto.com';
-      const username = process.env.panopto_username;
-      const password = process.env.panopto_password;
-      const clientId = process.env.panopto_clientId;
-      const clientSecret = process.env.panopto_clientSecret;
-      console.log(username, password, clientId, clientSecret);
-      const auth =
-        'Basic ' +
-        Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
-
-      const authData = qs.stringify({
-        grant_type: 'password',
-        username: username,
-        password: password,
-        scope: 'api openid',
-      });
-
-      const authConfig = {
-        method: 'post',
-        url: `https://${panoptoEndpoint}/Panopto/oauth2/connect/token`,
-        headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          Authorization: auth,
-        },
-        data: authData,
-      };
-
-      await axios(authConfig).then(async (response) => {
-        const token = await response.data.access_token;
-
-        const getCookieConfig = {
-          method: 'get',
-          url: 'https://aucklandtest.au.panopto.com/Panopto/api/v1/auth/legacyLogin',
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        };
-
-        await axios(getCookieConfig).then(async (response) => {
-          const cookie1 = await response.headers['set-cookie'][0];
-          const cookie2 = await response.headers['set-cookie'][1];
-
-          let getSrtConfig = {
-            method: 'get',
-            url: `https://${panoptoEndpoint}/Panopto/Pages/Transcription/GenerateSRT.ashx?id=${lectureId}&language=0`,
-            headers: {
-              authority: panoptoEndpoint,
-              'cache-control': 'max-age=0',
-              'sec-ch-ua-mobile': '?0',
-              'upgrade-insecure-requests': '1',
-              accept:
-                'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9',
-              'sec-fetch-site': 'none',
-              'sec-fetch-mode': 'navigate',
-              'sec-fetch-user': '?1',
-              'sec-fetch-dest': 'document',
-              'accept-language': 'en-US,en;q=0.9',
-              cookie: `${cookie1} ${cookie2}`,
-            },
-          };
-
-          await axios(getSrtConfig).then(async (response) => {
-            let jsonSrt = await parser.fromSrt(response.data);
-
-            // Check if the file exsits
-            if (jsonSrt) {
-              // First save lecture information in captionFiles table
-              const lectureData = CaptionFile.build({
-                lecture_id: lectureId,
-              });
-
-              await lectureData.save();
-
-              // Then save lecture captions information in captionSentences table
-              await jsonSrt.forEach(async (sentence) => {
-                const sentenceData = CaptionSentence.build({
-                  position: sentence.id,
-                  start: getTimeFromStart(sentence.startTime),
-                  body: sentence.text,
-                  CaptionFileLectureId: lectureId,
-                });
-
-                await sentenceData.save();
-              });
-            }
-          });
-        });
-      });
-    }
-
-    //return all the caption sentences with its best edits
-    const caption = await CaptionSentence.findAll({
-      where: {
-        CaptionFileLectureId: { [Op.eq]: lectureId },
-      },
-    });
-
-    let toRet = [];
-    let len = caption.length - 1;
-
-    await caption.forEach(async (x, i) => {
-      const votes = await Vote.findAll({
-        where: {
-          EditId: { [Op.eq]: x.id },
-        },
-      });
-
-      const upVotes = await votes.filter((x) => x.upvoted).length;
-      const downVotes = await votes.filter((x) => !x.upvoted).length;
-
-      let y = await {
-        id: await x.id,
-        start: await x.start,
-        body: await x.body,
-        edits: await {
-          id: await x.id,
-          body: await x.body,
-          UserId: await x.UserId,
-          votes: (await upVotes) - downVotes,
-          reported: await null,
-          createdAt: await x.createdAt,
-          updatedAt: await x.updatedAt,
-        },
-      };
-
-      await toRet.push(y);
-
-      if (i == len) res.json(toRet);
-    });
-  } catch (err) {
-    console.log(err);
-  }
+  await getCaptions(lectureId, upi).then(result => {
+    return res.json(result)
+  })
 });
 
 //query the edits of one sentence
 router.get("/edits/:sentenceId/:upi", async (req, res) => {
   let { sentenceId, upi } = req.params;
 
-  await getEdits(sentenceId, upi, res);
+  await getEdits(sentenceId, upi).then(result => {
+    if (result == "Caption sentence not found") {
+      return res.status(404).send(result)
+    } else {
+      console.log(result)
+      return res.json(result)
+    }
+  });
 });
 
 //insert new edits into the database
 router.post('/edit', async (req, res) => {
   const { sentenceId, body, upi } = req.body;
 
-  await postEdits(sentenceId, body, upi, res);
+  await postEdits(sentenceId, body, upi).then(result => {
+    if (result == "Caption Sentence does not exist") {
+      return res.status(404).send(result)
+    } 
+    else if (result == "Edit should be less than 200 chracters") {
+      return res.send(result)
+    } 
+    else {
+      return res.json(result)
+    }
+  })
 });
 
 //insert new vote into the database
 router.post('/vote', async (req, res) => {
   const { upvoted, EditId, upi } = req.body;
-
-  await postVotes(upvoted, EditId, upi, res);
+  
+  await postVotes(upvoted, EditId, upi).then(result => {
+    if (result == "vote removed") {
+      return res.send(result)
+    } 
+    else {
+      return res.json(result)
+    }
+  });
 });
 
 //insert new report into the database
-router.post('/report', async (req, res) => {
-  const { report, EditId, UserUpi } = req.body;
-
-  await postReports(report, EditId, UserUpi, res);
+router.post("/report", async (req, res) => {
+  const { reported, EditId, UserUpi } = req.body;
+  
+  await postReports(reported, EditId, UserUpi).then(result => {
+    return res.json(result)
+  });
 });
 
 module.exports = router;
