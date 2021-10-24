@@ -51,35 +51,63 @@ router.get("/", async (req, res) => {
 router.get("/captions/:lectureId/:upi", async (req, res) => {
   let {lectureId, upi} = req.params;
 
-  await getCaptions(lectureId, upi, res)
+  await getCaptions(lectureId, upi).then(result => {
+    return res.json(result)
+  })
 });
 
 //query the edits of one sentence
 router.get("/edits/:sentenceId/:upi", async (req, res) => {
   let {sentenceId, upi} = req.params
 
-  await getEdits(sentenceId, upi, res);
+  await getEdits(sentenceId, upi).then(result => {
+    if (result == "Caption sentence not found") {
+      return res.status(404).send(result)
+    } else {
+      console.log(result)
+      return res.json(result)
+    }
+  });
 });
 
 //insert new edits into the database
 router.post("/edit", async (req, res) => {
   const { sentenceId, body, upi } = req.body;
 
-  await postEdits(sentenceId, body, upi, res);
+  await postEdits(sentenceId, body, upi).then(result => {
+    if (result == "Caption Sentence does not exist") {
+      return res.status(404).send(result)
+    } 
+    else if (result == "Edit should be less than 200 chracters") {
+      return res.send(result)
+    } 
+    else {
+      return res.json(result)
+    }
+  })
 });
 
 //insert new vote into the database
 router.post("/vote", async (req, res) => {
   const { upvoted, EditId, upi } = req.body;
   
-  await postVotes(upvoted, EditId, upi, res);
+  await postVotes(upvoted, EditId, upi).then(result => {
+    if (result == "vote removed") {
+      return res.send(result)
+    } 
+    else {
+      return res.json(result)
+    }
+  });
 });
 
 //insert new report into the database
 router.post("/report", async (req, res) => {
-  const { report, EditId, UserUpi } = req.body;
+  const { reported, EditId, UserUpi } = req.body;
   
-  await postReports(report, EditId, UserUpi, res);
+  await postReports(reported, EditId, UserUpi).then(result => {
+    return res.json(result)
+  });
 });
 
 module.exports = router;

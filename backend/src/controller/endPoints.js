@@ -16,7 +16,7 @@ const {
   Vote,
 } = require("../models");
 
-export const getCaptions = async(lectureId, upi, res) => {
+export const getCaptions = async(lectureId, upi) => {
   try {
     const result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
@@ -121,7 +121,7 @@ export const getCaptions = async(lectureId, upi, res) => {
       },
     });
 
-    res.json({
+    return{
       Caption_file: caption.map((x) => {
         return {
           id: x.id,
@@ -130,13 +130,13 @@ export const getCaptions = async(lectureId, upi, res) => {
           edits: []
         };
       }),
-    });
+    };
   } catch (err) {
     console.log(err);
   }
 }
 
-export const getEdits = async(sentenceId, upi, res) => {
+export const getEdits = async(sentenceId, upi) => {
     try {
       //fetch the parent caption sentence
         const parentCapiton = await CaptionSentence.findAll({
@@ -146,7 +146,7 @@ export const getEdits = async(sentenceId, upi, res) => {
         });
         //check if the parent sentence exist
         if (!!parentCapiton.length) {
-          await Edit.findAll({
+          return await Edit.findAll({
             where: {
               CaptionSentenceId: sentenceId,
               reports: { [Op.lte]: 3 },
@@ -190,22 +190,22 @@ export const getEdits = async(sentenceId, upi, res) => {
               });
             }
             console.log(toRet)
-            return res.json(toRet);
+            return toRet;
           });
         } else {
           //return error message if code does not run as intended
-          res.status(404).send("Capiton not found");
+          return "Caption sentence not found"
         }
     } catch (err) {
         console.log(err);
     }
 };
 
-export const postEdits = async (sentenceId, body, upi, res) => {
+export const postEdits = async (sentenceId, body, upi) => {
   try {
     // check if body is too long
     if (body.length > 200) {
-      return res.send("Edit should be less than 200 chracters")
+      return "Edit should be less than 200 chracters"
     }
     //check if user exist
     let checkUser = await User.findOne({where: {upi: upi}})
@@ -228,14 +228,14 @@ export const postEdits = async (sentenceId, body, upi, res) => {
         UserUpi: upi,
       });
     });
-    return res.json(data);
+    return data;
   } catch (err) {
     console.log(err);
-    return res.status(404).send("Caption Sentence does not exist")
+    return "Caption Sentence does not exist"
   }
 };
 
-export const postVotes = async (upvoted, EditId, upi, res) => {
+export const postVotes = async (upvoted, EditId, upi) => {
   try {
     let update = { upvoted: upvoted };
     console.log(upvoted, EditId, upi)
@@ -245,9 +245,7 @@ export const postVotes = async (upvoted, EditId, upi, res) => {
       //if the vote exist and have the same value, we can just remove it
       if (result["dataValues"]["upvoted"] == (upvoted === 'true')) {
         Vote.destroy({ where: { EditId, UserUpi: upi } })
-        return res.json({
-          message: "vote removed"
-        });
+        return "vote removed";
         //else we update the current vote
       } else {
         const change = await Vote.update(update, {
@@ -256,10 +254,10 @@ export const postVotes = async (upvoted, EditId, upi, res) => {
             UserUpi: upi,
           },
         });
-        return res.json({
+        return {
           message: "vote changed",
           change
-        });
+        };
       }
     }
     //if the vote does not exist we can create a new one
@@ -270,16 +268,16 @@ export const postVotes = async (upvoted, EditId, upi, res) => {
     });
     await data.save();
     console.log(data)
-    return res.json({
+    return {
       message: "vote created",
       data
-    });
+    };
   } catch (err) {
     console.log(err);
   }
 };
 
-export const postReports = async (upvoted, EditId, UserUpi, res) => {
+export const postReports = async (reported, EditId, UserUpi) => {
   try {
     const result = await Report.findOne({ where: { UserUpi, EditId } });
     //if the vote exist and have the same value, we assume the user wish to undo the report
@@ -291,10 +289,10 @@ export const postReports = async (upvoted, EditId, UserUpi, res) => {
           EditId,
         },
       });
-      return res.json({
-        message: "undo report",
+      return {
+        message: "report removed",
         result,
-      });
+      };
     }
     //create report if it does not exist
     else {
@@ -303,10 +301,10 @@ export const postReports = async (upvoted, EditId, UserUpi, res) => {
         UserUpi,
       });
       await data.save();
-      return res.json({
+      return {
         message: "created new report",
         data,
-      });
+      };
     }
   } catch (err) {
     console.log(err);
