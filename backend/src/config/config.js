@@ -1,6 +1,7 @@
 require('dotenv').config();
 module.exports = {
     development: {
+        logging: false,
         database: process.env.POSTGRES_DB,
         username: "crowdcaptions",
         password: "crowdcaptions",

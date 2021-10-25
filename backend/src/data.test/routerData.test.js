@@ -92,3 +92,21 @@ export const voteData = async (vote) => {
     await data.save();
   }
 };
+
+export const createMockData = async(
+  sequelize,
+  CaptionFile,
+  CaptionSentence,
+  User,
+  Edit,
+  Report,
+  Vote) => {
+  await sequelize.sync({ force: true });
+  // populate the database with mock data, for testing purpose
+  await captionFileData(CaptionFile);
+  await captionSentenceData(CaptionSentence);
+  await userData(User);
+  await editData(Edit);
+  await reportData(Report);
+  await voteData(Vote);
+}

@@ -204,7 +204,6 @@ export const getEdits = async(sentenceId, upi) => {
               votes: upVotes - downVotes,
             });
           }
-          console.log(toRet)
           return toRet;
         });
       } else {
@@ -228,7 +227,6 @@ export const postEdits = async (sentenceId, body, upi) => {
     if (checkUser == null) {
       checkUser = await User.create({ upi });
     }
-    console.log(checkUser['dataValues']['id']);
     //insert edit
     const data = await Edit.build({
       body,
@@ -253,7 +251,6 @@ export const postEdits = async (sentenceId, body, upi) => {
 export const postVotes = async (upvoted, EditId, upi) => {
   try {
     let update = { upvoted: upvoted };
-    console.log(upvoted, EditId, upi);
     const result = await Vote.findOne({ where: { UserUpi: upi, EditId } });
     //if the vote exists in the db
     if (result) {
@@ -287,7 +284,6 @@ export const postVotes = async (upvoted, EditId, upi) => {
       UserUpi: upi,
     });
     await data.save();
-    console.log(data)
     return {
       message: "vote created",
       data
