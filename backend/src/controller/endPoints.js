@@ -289,7 +289,6 @@ export const postVotes = async (upvoted, EditId, upi) => {
       data
     };
   } catch (err) {
-    console.log(err);
     return "Upi is too long or Edit does not exist"
   }
 };

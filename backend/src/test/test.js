@@ -33,6 +33,38 @@ const arguments = [
 
 const {createMockData} = require('../data.test/routerData.test');
 
+describe('Get Edits', async () => {
+  describe('Get Edit', async() => {
+    it('should show expected values from mock data', async() => {
+      await createMockData(...arguments)
+      await getEdits(1, "test123").then(result => {
+        assert(result[0]["id"] == 1)
+        assert(result[0]["body"] == 'This is a test body 1')
+        assert(result[0]["upvoted"] == null)
+      })
+      assert.strictEqual(true, true)
+    })
+  }),
+  describe('Get Edit where sentenceID doesnt exists', async() => {
+    it('should show error error message', async() => {
+      await createMockData(...arguments)
+      await getEdits(1111, "test123").then(result => {
+        assert(result == "Caption sentence not found")
+      })
+      assert.strictEqual(true, true)
+    })
+  }),
+  describe('User is defaulty upvoting their submitted edit', async() => {
+    it('should show user has upvoted as true when getting edits after user has voted', async() => {
+      await createMockData(...arguments)
+      await postEdits(1, "Hi markers ;)", "test123")
+      await getEdits(1, "test123").then(result => {
+        assert(result[1]["upvoted"] == true)
+      })
+      assert.strictEqual(true, true)
+    })
+  })
+})
 
 
 describe('Post Edit', async () => {
@@ -56,16 +88,6 @@ describe('Post Edit', async () => {
 })
 
 describe('Post Vote', async () => {
-    describe('User is defaulty upvoting their submitted edit', async() => {
-        it('should show user has upvoted as true when getting edits after user has voted', async() => {
-          await createMockData(...arguments)
-          await postEdits(1, "Hi markers ;)", "test123")
-          await getEdits(1, "test123").then(result => {
-            assert(result[1]["upvoted"] == true)
-          })
-          assert.strictEqual(true, true)
-        })
-    })
     describe('User is upvoting', async() => {
       it('show edit as upvoted by that user', async() => {
         await createMockData(...arguments)
@@ -103,5 +125,21 @@ describe('Post Vote', async () => {
             assert(result[0]["upvoted"] == null)
           })
         })
+    }),
+    describe('User is voting on an edit that doesnt exist', async() => {
+      it('show appropriate error message',async () => {
+        await createMockData(...arguments)
+        await postVotes("true", 111111, "test123").then(result => {
+          assert(result == "Upi is too long or Edit does not exist")
+        })
+      })
+    }),
+    describe('User upi is too long', async() => {
+      it('show appropriate error message',async () => {
+        await createMockData(...arguments)
+        await postVotes("true", 111111, getBigString()).then(result => {
+          assert(result == "Upi is too long or Edit does not exist")
+        })
+      })
     })
 })
