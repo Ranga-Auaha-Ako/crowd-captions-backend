@@ -26,7 +26,7 @@ export const getCaptions = async(lectureId, upi) => {
     if (!result) {
       let parser = new srtParser2();
 
-      const panoptoEndpoint = "aucklandtest.au.panopto.com";
+      const panoptoEndpoint = process.env.panopto_host;
       const username = process.env.panopto_username;
       const password = process.env.panopto_password;
       const clientId = process.env.panopto_clientId;
@@ -58,7 +58,7 @@ export const getCaptions = async(lectureId, upi) => {
 
         const getCookieConfig = {
           method: "get",
-          url: "https://aucklandtest.au.panopto.com/Panopto/api/v1/auth/legacyLogin",
+          url: `https://${panoptoEndpoint}/Panopto/api/v1/auth/legacyLogin`,
           headers: {
             Authorization: `Bearer ${token}`,
           },
