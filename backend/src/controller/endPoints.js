@@ -6,8 +6,6 @@ const { default: srtParser2 } = require("srt-parser-2");
 // Import helper
 const { getTimeFromStart } = require("../helper/getTimeFromStart");
 
-const { Op } = require('sequelize');
-
 //import all database as constants
 const {
   sequelize,
