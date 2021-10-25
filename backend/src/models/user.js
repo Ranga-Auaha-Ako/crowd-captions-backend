@@ -20,7 +20,7 @@ module.exports = (sequelize, DataTypes) => {
         defaultValue: 0,
       },
       upi: {
-        type: DataTypes.STRING(9),
+        type: DataTypes.STRING(128),
         allowNull: false,
         primaryKey: true,
       },
