@@ -70,7 +70,7 @@ export const getCaptions = async(lectureId, upi) => {
 
           let getSrtConfig = {
             method: "get",
-            url: `https://${panoptoEndpoint}/Panopto/Pages/Transcription/GenerateSRT.ashx?id=${lectureId}&language=0`,
+            url: `https://${panoptoEndpoint}/Panopto/Pages/Transcription/GenerateSRT.ashx?id=${lectureId}&language=1`,
             headers: {
               authority: panoptoEndpoint,
               "cache-control": "max-age=0",

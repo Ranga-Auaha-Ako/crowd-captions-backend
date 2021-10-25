@@ -10,6 +10,10 @@ services:
       - POSTGRES_PASS
       - POSTGRES_HOST
       - POSTGRES_PORT
+      - panopto_username
+      - panopto_password
+      - panopto_clientId
+      - panopto_clientSecret
     ports:
       # Access and debug ports
       - 8000:8000
