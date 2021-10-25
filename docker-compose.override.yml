@@ -2,11 +2,11 @@
 
 services:
   db:
-    image: postgres
+    image: postgres:13
     restart: always
     environment:
       POSTGRES_PASSWORD: ${POSTGRES_PASS:-crowdcaptions}
-      POSTGRES_DB:  ${POSTGRES_DB:-crowdcaptions}
+      POSTGRES_DB: ${POSTGRES_DB:-crowdcaptions}
       POSTGRES_USER: ${POSTGRES_PASS:-crowdcaptions}
     volumes:
       - db-data:/var/lib/postgresql/data
@@ -15,7 +15,7 @@ services:
 
   backend:
     environment:
-      POSTGRES_DB:  ${POSTGRES_DB:-crowdcaptions}
+      POSTGRES_DB: ${POSTGRES_DB:-crowdcaptions}
       POSTGRES_USER: ${POSTGRES_PASS:-crowdcaptions}
       POSTGRES_PASS: ${POSTGRES_PASS:-crowdcaptions}
       POSTGRES_HOST: ${POSTGRES_HOST:-db}

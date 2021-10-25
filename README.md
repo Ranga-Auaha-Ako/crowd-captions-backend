@@ -29,7 +29,9 @@ To start developing, grab your OS-specific version of [Docker](https://www.docke
 
 Everything should download and configure automatically. Confirm things are working by visiting http://localhost:8000/. If you see "received on port: 8000", you're good to go.
 
-**Note: if you at any point change the package.json or need to rebuild, use `docker-compse rm` to remove it, before running `docker-compose up` again.**
+If you'd like to run this detached from your current terminal, just use `docker-compose up -d` instead.
+
+**Note: if you at any point change the package.json or if you need (or want) to rebuild from scratch, use `docker-compose down -v --rmi all` to remove everything, before running `docker-compose up` again.**
 
 
 ## Testing the project
