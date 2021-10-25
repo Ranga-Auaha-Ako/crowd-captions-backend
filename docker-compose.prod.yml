@@ -11,3 +11,7 @@ services:
       POSTGRES_PASS: ${POSTGRES_PASS:-crowdcaptions}
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      panopto_username: ${panopto_username}
+      panopto_password: ${panopto_password}
+      panopto_clientId: ${panopto_clientId}
+      panopto_clientSecret: ${panopto_clientSecret}
