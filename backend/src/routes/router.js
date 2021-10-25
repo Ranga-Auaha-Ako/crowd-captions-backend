@@ -98,9 +98,9 @@ router.post('/vote', async (req, res) => {
   const { upvoted, EditId, upi } = req.body;
   
   await postVotes(upvoted, EditId, upi).then(result => {
-    if (result == "vote removed") {
+    if (typeof(result) == String) {
       return res.send(result)
-    } 
+    }
     else {
       return res.json(result)
     }

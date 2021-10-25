@@ -122,15 +122,28 @@ export const getCaptions = async(lectureId, upi) => {
       },
     });
 
-    return{
-      Caption_file: caption.map((x) => {
-        return {
-          id: x.id,
-          start: x.start,
-          body: x.body,
-          edits: []
-        };
-      }),
+    return {
+      Caption_file: await Promise.all(
+        caption.map(async (item) => {
+          let editData = await getEdits(item.id, upi);
+          let bestEdit = null;
+  
+          if (editData) {
+            bestEdit = editData.sort((a, b) => (a.votes < b.votes ? 1 : -1))[0];
+          }
+
+          if (bestEdit == null) {
+            bestEdit = {}
+          }
+  
+          return {
+            id: item.id,
+            start: item.start,
+            body: item.body,
+            bestEdit: bestEdit,
+          };
+        })
+      ),
     };
   } catch (err) {
     console.log(err);
@@ -220,7 +233,7 @@ export const postEdits = async (sentenceId, body, upi) => {
       body,
       reports: 0,
       CaptionSentenceId: sentenceId,
-      UserId: checkUser['dataValues']['id'],
+      UserUpi: upi,
     });
     await data.save().then((d) => {
       Vote.create({
@@ -261,6 +274,11 @@ export const postVotes = async (upvoted, EditId, upi) => {
         };
       }
     }
+    let checkUser = await User.findOne({ where: { upi: upi } });
+    //create user if user not exist
+    if (checkUser == null) {
+      checkUser = await User.create({ upi });
+    }
     //if the vote does not exist we can create a new one
     const data = await Vote.create({
       upvoted,
@@ -275,6 +293,7 @@ export const postVotes = async (upvoted, EditId, upi) => {
     };
   } catch (err) {
     console.log(err);
+    return "Upi is too long or Edit does not exist"
   }
 };
 
