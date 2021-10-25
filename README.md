@@ -29,6 +29,22 @@ To start developing, grab your OS-specific version of [Docker](https://www.docke
 
 Everything should download and configure automatically. Confirm things are working by visiting http://localhost:8000/. If you see "received on port: 8000", you're good to go.
 
+**Note: if you at any point change the package.json or need to rebuild, use `docker-compse rm` to remove it, before running `docker-compose up` again.**
+
+
+## Testing the project
+
+Think you're ready to submit a pull request? First, make sure your code passes all of the tests. This is also a good time to update any tests that need it, and to create/remove new and redundant tests. To test the project, run:
+
+```
+docker-compose run backend npm test
+```
+
+## Running in production
+
+```
+docker-compose -f docker-compose.yml -f docker-compose.prod.yml up
+```
 
 ## Stack
 
