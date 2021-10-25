@@ -124,6 +124,7 @@ export const getCaptions = async(lectureId, upi) => {
 
     return {
       Caption_file: await Promise.all(
+        // Return each caption sentence and get its best edit
         caption.map(async (item) => {
           let editData = await getEdits(item.id, upi);
           let bestEdit = null;
