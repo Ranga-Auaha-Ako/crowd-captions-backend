@@ -120,3 +120,5 @@ dist
 
 # configuration
 backend/src/config/config.js
+
+.DS_Store

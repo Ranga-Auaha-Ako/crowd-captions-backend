@@ -31,7 +31,6 @@ export const getCaptions = async(lectureId, upi) => {
       const password = process.env.panopto_password;
       const clientId = process.env.panopto_clientId;
       const clientSecret = process.env.panopto_clientSecret;
-      console.log(username, password, clientId, clientSecret)
       const auth =
         "Basic " +
         Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
