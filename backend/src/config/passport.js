@@ -25,7 +25,7 @@ let PanoptoStrategy = new OAuth2Strategy(
     const [user, created] = await User.findOrCreate({
       where: { upi: profile.id, access: 0 },
     });
-    return done(null, user.get({ plain: true }));
+    return done(null, { ...user.get({ plain: true }), accessToken });
   }
 );
 
@@ -105,11 +105,12 @@ passport.use(PanoptoStrategy);
 
 passport.serializeUser(function (user, done) {
   console.log(user);
-  done(null, user.upi);
+  done(null, `${user.upi}::${user.accessToken}`);
 });
 
-passport.deserializeUser(async function (upi, done) {
+passport.deserializeUser(async function (serial, done) {
+  const [upi, accessToken] = serial.split("::");
   console.log(upi);
   const u = await User.findByPk(upi);
-  done(null, u.get({ plain: true }));
+  done(null, { ...u.get({ plain: true }), accessToken });
 });

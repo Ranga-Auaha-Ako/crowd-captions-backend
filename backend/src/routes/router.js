@@ -76,16 +76,26 @@ router.get("/login", passport.authenticate("oauth2"), async (req, res) => {
 });
 
 router.get("/success", isAuthenticated, async (req, res) => {
-  return res.json({ status: `Hi ${req.user.upi}! Wow, what a fun name.` });
+  return res.json({
+    status: `Hi ${
+      req.user.upi
+    }! Wow, what a fun name. Here's the info we have on you:\n${JSON.stringify(
+      req.user,
+      null,
+      4
+    )}`,
+  });
 });
 
 // Test with id: 9592f9fc-0af4-49b8-9e38-ad6b004d17df
 router.get("/captions/:lectureId/", isAuthenticated, async (req, res) => {
   let { lectureId } = req.params;
 
-  await getCaptions(lectureId, req.user.upi).then((result) => {
-    return res.json(result);
-  });
+  await getCaptions(lectureId, req.user.upi, req.user.accessToken).then(
+    (result) => {
+      return res.json(result);
+    }
+  );
 });
 
 //query the edits of one sentence

@@ -15,92 +15,66 @@ const {
   Report,
   User,
   Vote,
-} = require('../models');
+} = require("../models");
 
-export const getCaptions = async(lectureId, upi) => {
+export const getCaptions = async (lectureId, upi, accessToken) => {
   try {
     const result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
     });
-    console.log(result)
+    console.log(result);
     if (!result) {
+      // Confirm user is able to view this lecture. Break if not
+      const lectureInfo = await axios.get(
+        `https://aucklandtest.au.panopto.com/Panopto/api/v1/sessions/${lectureId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      if (
+        lectureInfo.status != "200" ||
+        !lectureInfo.data ||
+        !lectureInfo.data?.Urls?.CaptionDownloadUrl
+      ) {
+        return [];
+      }
+
       let parser = new srtParser2();
 
-      const panoptoEndpoint = process.env.panopto_host;
-      const username = process.env.panopto_username;
-      const password = process.env.panopto_password;
-      const clientId = process.env.panopto_clientId;
-      const clientSecret = process.env.panopto_clientSecret;
-      const auth =
-        "Basic " +
-        Buffer.from(`${clientId}:${clientSecret}`).toString("base64");
-
-      const authData = qs.stringify({
-        grant_type: "password",
-        username: username,
-        password: password,
-        scope: "api openid",
-      });
-
-      const authConfig = {
-        method: "post",
-        url: `https://${panoptoEndpoint}/Panopto/oauth2/connect/token`,
+      let getSrtConfig = {
+        method: "get",
+        url: lectureInfo.data?.Urls?.CaptionDownloadUrl,
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
-          Authorization: auth,
+          Authorization: `Bearer ${accessToken}`,
         },
-        data: authData,
       };
 
-      await axios(authConfig).then(async (response) => {
-        const token = await response.data.access_token;
+      await axios(getSrtConfig).then(async (response) => {
+        let jsonSrt = await parser.fromSrt(response.data);
 
-        const getCookieConfig = {
-          method: "get",
-          url: `https://${panoptoEndpoint}/Panopto/api/v1/auth/legacyLogin`,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        };
-
-        await axios(getCookieConfig).then(async (response) => {
-          const cookie1 = await response.headers["set-cookie"][0];
-          const cookie2 = await response.headers["set-cookie"][1];
-
-          let getSrtConfig = {
-            method: "get",
-            url: `https://${panoptoEndpoint}/Panopto/Pages/Transcription/GenerateSRT.ashx?id=${lectureId}&language=1`,
-            headers: {
-              cookie: `${cookie1} ${cookie2}`,
-            },
-          };
-
-          await axios(getSrtConfig).then(async (response) => {
-            let jsonSrt = await parser.fromSrt(response.data);
-
-            // Check if the file exsits
-            if (jsonSrt) {
-              // First save lecture information in captionFiles table
-              const lectureData = CaptionFile.build({
-                lecture_id: lectureId,
-              });
-
-              await lectureData.save();
-
-              // Then save lecture captions information in captionSentences table
-              await jsonSrt.forEach(async (sentence) => {
-                const sentenceData = CaptionSentence.build({
-                  position: sentence.id,
-                  start: getTimeFromStart(sentence.startTime),
-                  body: sentence.text,
-                  CaptionFileLectureId: lectureId,
-                });
-
-                await sentenceData.save();
-              });
-            }
+        // Check if the file exsits
+        if (jsonSrt) {
+          // First save lecture information in captionFiles table
+          const lectureData = CaptionFile.build({
+            lecture_id: lectureId,
           });
-        });
+
+          await lectureData.save();
+
+          // Then save lecture captions information in captionSentences table
+          await jsonSrt.forEach(async (sentence) => {
+            const sentenceData = CaptionSentence.build({
+              position: sentence.id,
+              start: getTimeFromStart(sentence.startTime),
+              body: sentence.text,
+              CaptionFileLectureId: lectureId,
+            });
+
+            await sentenceData.save();
+          });
+        }
       });
     }
 
@@ -116,15 +90,15 @@ export const getCaptions = async(lectureId, upi) => {
         caption.map(async (item) => {
           let editData = await getEdits(item.id, upi);
           let bestEdit = null;
-  
+
           if (editData) {
             bestEdit = editData.sort((a, b) => (a.votes < b.votes ? 1 : -1))[0];
           }
 
           if (bestEdit == null) {
-            bestEdit = {}
+            bestEdit = {};
           }
-  
+
           return {
             id: item.id,
             start: item.start,
@@ -137,69 +111,69 @@ export const getCaptions = async(lectureId, upi) => {
   } catch (err) {
     console.log(err);
   }
-}
+};
 
-export const getEdits = async(sentenceId, upi) => {
+export const getEdits = async (sentenceId, upi) => {
   try {
     //fetch the parent caption sentence
-      const parentCapiton = await CaptionSentence.findAll({
+    const parentCapiton = await CaptionSentence.findAll({
+      where: {
+        id: sentenceId,
+      },
+    });
+    //check if the parent sentence exist
+    if (!!parentCapiton.length) {
+      return await Edit.findAll({
         where: {
-          id: sentenceId,
+          CaptionSentenceId: sentenceId,
+          reports: { [Op.lte]: 3 },
         },
-      });
-      //check if the parent sentence exist
-      if (!!parentCapiton.length) {
-        return await Edit.findAll({
-          where: {
-            CaptionSentenceId: sentenceId,
-            reports: { [Op.lte]: 3 },
-          },
-        }).then(async (result) => {
-          let toRet = [];
-          
-          //find votes for all the edits
-          for (let x = 0; x < result.length; x++) {
-            const votes = await Vote.findAll({
-              where: {
-                EditId: { [Op.eq]: result[x].id },
-              },
-            });
-            let hasUserUpVoted = null
-  
-            for (let i=0; i<votes.length; i++) {
-              if (upi == votes[i]["dataValues"]["UserUpi"]) {
-                hasUserUpVoted = votes[i]["dataValues"]["upvoted"]
-              }
-              //console.log(votes[i] ) //["dataValues"]["upvoted"]
+      }).then(async (result) => {
+        let toRet = [];
+
+        //find votes for all the edits
+        for (let x = 0; x < result.length; x++) {
+          const votes = await Vote.findAll({
+            where: {
+              EditId: { [Op.eq]: result[x].id },
+            },
+          });
+          let hasUserUpVoted = null;
+
+          for (let i = 0; i < votes.length; i++) {
+            if (upi == votes[i]["dataValues"]["UserUpi"]) {
+              hasUserUpVoted = votes[i]["dataValues"]["upvoted"];
             }
-  
-            const upVotes = await votes.filter((x) => x.upvoted).length;
-            const downVotes = await votes.filter((x) => !x.upvoted).length;
-  
-            //return the result to the front end
-            toRet.push({
-              id: result[x].id,
-              body: result[x].body,
-              reports: result[x].reports,
-              createdAt: result[x].createdAt,
-              updatedAt: result[x].updatedAt,
-              CaptionSentenceId: result[x].CaptionSentenceId,
-              UserId: result[x].UserId,
-              upvoted: hasUserUpVoted,
-              reported: null,
-              upVotes: upVotes,
-              downVotes: downVotes,
-              votes: upVotes - downVotes,
-            });
+            //console.log(votes[i] ) //["dataValues"]["upvoted"]
           }
-          return toRet;
-        });
-      } else {
-        //return error message if code does not run as intended
-        return "Caption sentence not found"
-      }
+
+          const upVotes = await votes.filter((x) => x.upvoted).length;
+          const downVotes = await votes.filter((x) => !x.upvoted).length;
+
+          //return the result to the front end
+          toRet.push({
+            id: result[x].id,
+            body: result[x].body,
+            reports: result[x].reports,
+            createdAt: result[x].createdAt,
+            updatedAt: result[x].updatedAt,
+            CaptionSentenceId: result[x].CaptionSentenceId,
+            UserId: result[x].UserId,
+            upvoted: hasUserUpVoted,
+            reported: null,
+            upVotes: upVotes,
+            downVotes: downVotes,
+            votes: upVotes - downVotes,
+          });
+        }
+        return toRet;
+      });
+    } else {
+      //return error message if code does not run as intended
+      return "Caption sentence not found";
+    }
   } catch (err) {
-      console.log(err);
+    console.log(err);
   }
 };
 
@@ -207,7 +181,7 @@ export const postEdits = async (sentenceId, body, upi) => {
   try {
     // check if body is too long
     if (body.length > 200) {
-      return "Edit should be less than 200 chracters"
+      return "Edit should be less than 200 chracters";
     }
     //check if user exist
     let checkUser = await User.findOne({ where: { upi: upi } });
@@ -225,14 +199,14 @@ export const postEdits = async (sentenceId, body, upi) => {
     await data.save().then((d) => {
       Vote.create({
         upvoted: true,
-        EditId: d['dataValues']['id'],
+        EditId: d["dataValues"]["id"],
         UserUpi: upi,
       });
     });
     return data;
   } catch (err) {
     console.log(err);
-    return "Caption Sentence does not exist"
+    return "Caption Sentence does not exist";
   }
 };
 
@@ -243,8 +217,8 @@ export const postVotes = async (upvoted, EditId, upi) => {
     //if the vote exists in the db
     if (result) {
       //if the vote exist and have the same value, we can just remove it
-      if (result["dataValues"]["upvoted"] == (upvoted === 'true')) {
-        Vote.destroy({ where: { EditId, UserUpi: upi } })
+      if (result["dataValues"]["upvoted"] == (upvoted === "true")) {
+        Vote.destroy({ where: { EditId, UserUpi: upi } });
         return "vote removed";
         //else we update the current vote
       } else {
@@ -256,7 +230,7 @@ export const postVotes = async (upvoted, EditId, upi) => {
         });
         return {
           message: "vote changed",
-          change
+          change,
         };
       }
     }
@@ -274,10 +248,10 @@ export const postVotes = async (upvoted, EditId, upi) => {
     await data.save();
     return {
       message: "vote created",
-      data
+      data,
     };
   } catch (err) {
-    return "Upi is too long or Edit does not exist"
+    return "Upi is too long or Edit does not exist";
   }
 };
 
