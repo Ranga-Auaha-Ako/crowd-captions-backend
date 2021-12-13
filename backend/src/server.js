@@ -5,11 +5,17 @@ and links each server components together
 
 import 'dotenv/config';
 import express from 'express';
+import session from 'express-session'
+var passport = require('passport');
+require('./config/passport');
 
 //import express as the framwork for the router and endpoints
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(session({ secret: 'Deeply4-Showplace-Overcoat', resave: true, saveUninitialized: false })); // TODO: CRITICAL!!! CHANGE THIS TO LOAD FROM ENV
+app.use(passport.initialize());
+app.use(passport.session());
 
 //enable CORS by using middleware
 const cors = require('cors');
