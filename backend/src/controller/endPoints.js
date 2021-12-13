@@ -15,14 +15,14 @@ const {
   Report,
   User,
   Vote,
-} = require('../models');
+} = require("../models");
 
-export const getCaptions = async(lectureId, upi) => {
+export const getCaptions = async (lectureId, upi) => {
   try {
     const result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
     });
-    console.log(result)
+    console.log(result);
     if (!result) {
       let parser = new srtParser2();
 
@@ -116,15 +116,15 @@ export const getCaptions = async(lectureId, upi) => {
         caption.map(async (item) => {
           let editData = await getEdits(item.id, upi);
           let bestEdit = null;
-  
+
           if (editData) {
             bestEdit = editData.sort((a, b) => (a.votes < b.votes ? 1 : -1))[0];
           }
 
           if (bestEdit == null) {
-            bestEdit = {}
+            bestEdit = {};
           }
-  
+
           return {
             id: item.id,
             start: item.start,
@@ -137,69 +137,70 @@ export const getCaptions = async(lectureId, upi) => {
   } catch (err) {
     console.log(err);
   }
-}
+};
 
-export const getEdits = async(sentenceId, upi) => {
+export const getEdits = async (sentenceId, upi) => {
   try {
     //fetch the parent caption sentence
-      const parentCapiton = await CaptionSentence.findAll({
+    const parentCapiton = await CaptionSentence.findAll({
+      where: {
+        id: sentenceId,
+      },
+    });
+    //check if the parent sentence exist
+    if (!!parentCapiton.length) {
+      return await Edit.findAll({
         where: {
-          id: sentenceId,
+          CaptionSentenceId: sentenceId,
+          blocked: false,
         },
-      });
-      //check if the parent sentence exist
-      if (!!parentCapiton.length) {
-        return await Edit.findAll({
-          where: {
-            CaptionSentenceId: sentenceId,
-            reports: { [Op.lte]: 3 },
-          },
-        }).then(async (result) => {
-          let toRet = [];
-          
-          //find votes for all the edits
-          for (let x = 0; x < result.length; x++) {
-            const votes = await Vote.findAll({
-              where: {
-                EditId: { [Op.eq]: result[x].id },
-              },
-            });
-            let hasUserUpVoted = null
-  
-            for (let i=0; i<votes.length; i++) {
-              if (upi == votes[i]["dataValues"]["UserUpi"]) {
-                hasUserUpVoted = votes[i]["dataValues"]["upvoted"]
-              }
-              //console.log(votes[i] ) //["dataValues"]["upvoted"]
+      }).then(async (result) => {
+        let toRet = [];
+
+        //find votes for all the edits
+        for (let x = 0; x < result.length; x++) {
+          const votes = await Vote.findAll({
+            where: {
+              EditId: { [Op.eq]: result[x].id },
+            },
+          });
+          let hasUserUpVoted = null;
+
+          for (let i = 0; i < votes.length; i++) {
+            if (upi == votes[i]["dataValues"]["UserUpi"]) {
+              hasUserUpVoted = votes[i]["dataValues"]["upvoted"];
             }
-  
-            const upVotes = await votes.filter((x) => x.upvoted).length;
-            const downVotes = await votes.filter((x) => !x.upvoted).length;
-  
-            //return the result to the front end
-            toRet.push({
-              id: result[x].id,
-              body: result[x].body,
-              reports: result[x].reports,
-              createdAt: result[x].createdAt,
-              updatedAt: result[x].updatedAt,
-              CaptionSentenceId: result[x].CaptionSentenceId,
-              UserId: result[x].UserId,
-              upvoted: hasUserUpVoted,
-              reported: null,
-              upVotes: upVotes,
-              downVotes: downVotes,
-              votes: upVotes - downVotes,
-            });
+            //console.log(votes[i] ) //["dataValues"]["upvoted"]
           }
-          return toRet;
-        });
-      } else {
-        //return error message if code does not run as intended
-        return "Caption sentence not found"
-      }
+
+          const upVotes = await votes.filter((x) => x.upvoted).length;
+          const downVotes = await votes.filter((x) => !x.upvoted).length;
+
+          //return the result to the front end
+          toRet.push({
+            id: result[x].id,
+            body: result[x].body,
+            approved: result[x].approved,
+            blocked: result[x].blocked,
+            createdAt: result[x].createdAt,
+            updatedAt: result[x].updatedAt,
+            CaptionSentenceId: result[x].CaptionSentenceId,
+            UserId: result[x].UserId,
+            upvoted: hasUserUpVoted,
+            reported: null,
+            upVotes: upVotes,
+            downVotes: downVotes,
+            votes: upVotes - downVotes,
+          });
+        }
+        return toRet;
+      });
+    } else {
+      //return error message if code does not run as intended
+      return "Caption sentence not found";
+    }
   } catch (err) {
-      console.log(err);
+    console.log(err);
   }
 };
 
@@ -207,7 +208,7 @@ export const postEdits = async (sentenceId, body, upi) => {
   try {
     // check if body is too long
     if (body.length > 200) {
-      return "Edit should be less than 200 chracters"
+      return "Edit should be less than 200 chracters";
     }
     //check if user exist
     let checkUser = await User.findOne({ where: { upi: upi } });
@@ -218,21 +219,22 @@ export const postEdits = async (sentenceId, body, upi) => {
     //insert edit
     const data = await Edit.build({
       body,
-      reports: 0,
+      approved: false,
+      blocked: false,
       CaptionSentenceId: sentenceId,
       UserUpi: upi,
     });
     await data.save().then((d) => {
       Vote.create({
         upvoted: true,
-        EditId: d['dataValues']['id'],
+        EditId: d["dataValues"]["id"],
         UserUpi: upi,
       });
     });
     return data;
   } catch (err) {
     console.log(err);
-    return "Caption Sentence does not exist"
+    return "Caption Sentence does not exist";
   }
 };
 
@@ -243,8 +245,8 @@ export const postVotes = async (upvoted, EditId, upi) => {
     //if the vote exists in the db
     if (result) {
       //if the vote exist and have the same value, we can just remove it
-      if (result["dataValues"]["upvoted"] == (upvoted === 'true')) {
-        Vote.destroy({ where: { EditId, UserUpi: upi } })
+      if (result["dataValues"]["upvoted"] == (upvoted === "true")) {
+        Vote.destroy({ where: { EditId, UserUpi: upi } });
         return "vote removed";
         //else we update the current vote
       } else {
@@ -256,7 +258,7 @@ export const postVotes = async (upvoted, EditId, upi) => {
         });
         return {
           message: "vote changed",
-          change
+          change,
         };
       }
     }
@@ -274,10 +276,10 @@ export const postVotes = async (upvoted, EditId, upi) => {
     await data.save();
     return {
       message: "vote created",
-      data
+      data,
     };
   } catch (err) {
-    return "Upi is too long or Edit does not exist"
+    return "Upi is too long or Edit does not exist";
   }
 };
 
@@ -308,6 +310,48 @@ export const postReports = async (reported, EditId, UserUpi) => {
       return {
         message: "created new report",
         data,
+      };
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+export const approvals = async (approved, id) => {
+  try {
+    let update = { approved: approved };
+    const result = await Edit.findOne({ where: { id } });
+    //if the vote exists in the db
+    if (result) {
+      const change = await Edit.update(update, {
+        where: {
+          id,
+        },
+      });
+      return {
+        message: "edit approvment state changed",
+        change,
+      };
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
+export const blocks = async (blocked, id) => {
+  try {
+    let update = { blocked: blocked };
+    const result = await Edit.findOne({ where: { id } });
+    //if the vote exists in the db
+    if (result) {
+      const change = await Edit.update(update, {
+        where: {
+          id,
+        },
+      });
+      return {
+        message: "edit block state changed",
+        change,
       };
     }
   } catch (err) {

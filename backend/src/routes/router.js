@@ -21,10 +21,10 @@ const {
 // Import mock data functions fron routerData
 const {
   captionFileData,
+  userData,
   captionSentenceData,
   editData,
   reportData,
-  userData,
   voteData,
   createCaption,
 } = require('../data.test/routerData.test');
@@ -36,6 +36,8 @@ const {
   postEdits,
   postVotes,
   postReports,
+  approvals,
+  blocks
 } = require("../controller/endPoints");
 
 //handle request which access to root
@@ -96,7 +98,7 @@ router.post('/edit', async (req, res) => {
 //insert new vote into the database
 router.post('/vote', async (req, res) => {
   const { upvoted, EditId, upi } = req.body;
-  
+
   await postVotes(upvoted, EditId, upi).then(result => {
     if (typeof(result) == String) {
       return res.send(result)
@@ -107,10 +109,36 @@ router.post('/vote', async (req, res) => {
   });
 });
 
+router.post('/approvals', async (req, res) => {
+  const { approved, id } = req.body;
+
+  await approvals(approved, id).then(result => {
+    if (typeof(result) == String) {
+      return res.send(result)
+    }
+    else {
+      return res.json(result)
+    } 
+  });
+});
+
+router.post('/block', async (req, res) => {
+  const { blocked, id } = req.body;
+
+  await blocks(blocked, id).then(result => {
+    if (typeof(result) == String) {
+      return res.send(result)
+    }
+    else {
+      return res.json(result)
+    } 
+  });
+});
+
 //insert new report into the database
 router.post("/report", async (req, res) => {
   const { reported, EditId, UserUpi } = req.body;
-  
+
   await postReports(reported, EditId, UserUpi).then(result => {
     return res.json(result)
   });

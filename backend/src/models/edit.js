@@ -18,11 +18,16 @@ module.exports = (sequelize, DataTypes) => {
       body: {
         type: DataTypes.STRING(200),
       },
-      reports: {
-        type: DataTypes.INTEGER,
-        defaultValue: 0,
+      approved: {
+        type: DataTypes.BOOLEAN,
         allowNull: false,
+        defaultValue: false,
       },
+      blocked: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false,
+      } 
     },
     {
       sequelize,
