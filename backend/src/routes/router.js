@@ -41,7 +41,7 @@ const {
 } = require("../controller/endPoints");
 
 //handle request which access to root
-router.get("/", passport.authenticate("openid-oauth20"), async (req, res) => {
+router.get("/", passport.authenticate("oauth2"), async (req, res) => {
   await sequelize.sync({ force: true });
 
   // populate the database with mock data, for testing purpose
@@ -58,7 +58,7 @@ router.get("/", passport.authenticate("openid-oauth20"), async (req, res) => {
 // Authentication callback route
 router.get(
   "/auth/callback",
-  passport.authenticate("openid-oauth20", { failureRedirect: "/login" }),
+  passport.authenticate("oauth2", { failureRedirect: "/login" }),
   function (req, res) {
     // Successful authentication, redirect home.
     res.redirect("/success");

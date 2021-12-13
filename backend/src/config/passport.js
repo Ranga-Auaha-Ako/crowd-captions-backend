@@ -1,4 +1,5 @@
 const passport = require("passport");
+const OAuth2Strategy = require("passport-oauth2");
 var OpenIdOAuth2Strategy = require("passport-openid-oauth20").Strategy;
 //import all database as constants
 const {
@@ -11,11 +12,11 @@ const {
   Vote,
 } = require("../models");
 
-let PanoptoStrategy = new OpenIdOAuth2Strategy(
+let PanoptoStrategy = new OAuth2Strategy(
   {
     authorizationURL: `https://${process.env.panopto_host}/Panopto/oauth2/connect/authorize`,
     tokenURL: `https://${process.env.panopto_host}/Panopto/oauth2/connect/token`,
-    userProfileURL: `https://${process.env.panopto_host}/Panopto/oauth2/connect/userinfo`,
+    // userProfileURL: `https://${process.env.panopto_host}/Panopto/oauth2/connect/userinfo`,
     clientID: process.env.panopto_clientId,
     clientSecret: process.env.panopto_clientSecret,
     callbackURL: "http://localhost:8000/auth/callback",
