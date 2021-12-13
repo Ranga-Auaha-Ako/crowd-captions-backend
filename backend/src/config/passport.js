@@ -1,6 +1,6 @@
 const passport = require("passport");
-const OAuth2Strategy = require("passport-oauth2");
-var OpenIdOAuth2Strategy = require("passport-openid-oauth20").Strategy;
+const OAuth2Strategy = require("passport-oauth2").Strategy;
+// var OpenIdOAuth2Strategy = require("passport-openid-oauth20").Strategy;
 //import all database as constants
 const {
   sequelize,
@@ -16,28 +16,57 @@ let PanoptoStrategy = new OAuth2Strategy(
   {
     authorizationURL: `https://${process.env.panopto_host}/Panopto/oauth2/connect/authorize`,
     tokenURL: `https://${process.env.panopto_host}/Panopto/oauth2/connect/token`,
-    // userProfileURL: `https://${process.env.panopto_host}/Panopto/oauth2/connect/userinfo`,
     clientID: process.env.panopto_clientId,
     clientSecret: process.env.panopto_clientSecret,
     callbackURL: "http://localhost:8000/auth/callback",
     scope: ["api", "openid", "profile", "email"],
   },
-  function (accessToken, refreshToken, profile, done) {
-    console.log("profile");
-    console.log(profile);
-    console.log("accessToken");
-    console.log(accessToken);
-    User.findOrCreate({ where: { upi: profile.id, access: 0 } }).then(function (
-      user,
-      created
-    ) {
-      return done(null, user);
-      //   return done(null, user);
+  async function (accessToken, refreshToken, profile, done) {
+    const [user, created] = await User.findOrCreate({
+      where: { upi: profile.id, access: 0 },
     });
+    return done(null, user.get({ plain: true }));
   }
 );
 
+// https://github.com/Accelery/passport-openid-oauth20/blob/master/src/profile/openid.ts
+let parse = function (json) {
+  if ("string" == typeof json) {
+    json = JSON.parse(json);
+  }
+
+  var profile = {};
+
+  profile.id = json.sub;
+  profile.displayName = json.name;
+  if (json.family_name || json.given_name) {
+    profile.name = {
+      familyName: json.family_name,
+      givenName: json.given_name,
+    };
+  }
+  if (json.email) {
+    profile.emails = [
+      {
+        value: json.email,
+        verified: json.email_verified,
+      },
+    ];
+  }
+  if (json.picture) {
+    profile.photos = [
+      {
+        value: json.picture,
+      },
+    ];
+  }
+
+  return profile;
+};
+
 PanoptoStrategy.userProfile = function (accessToken, done) {
+  // Need to ovveride here to use auth headers
+  this._oauth2.useAuthorizationHeaderforGET(true);
   this._oauth2.get(
     `https://${process.env.panopto_host}/Panopto/oauth2/connect/userinfo`,
     accessToken,
@@ -75,11 +104,12 @@ PanoptoStrategy.userProfile = function (accessToken, done) {
 passport.use(PanoptoStrategy);
 
 passport.serializeUser(function (user, done) {
-  done(null, user.id);
+  console.log(user);
+  done(null, user.upi);
 });
 
-passport.deserializeUser(function (upi, done) {
-  User.findByPk(upi, function (err, user) {
-    done(err, user);
-  });
+passport.deserializeUser(async function (upi, done) {
+  console.log(upi);
+  const u = await User.findByPk(upi);
+  done(null, u.get({ plain: true }));
 });
