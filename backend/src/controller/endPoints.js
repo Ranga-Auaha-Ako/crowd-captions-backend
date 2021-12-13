@@ -4,7 +4,7 @@ const axios = require("axios");
 const { default: srtParser2 } = require("srt-parser-2");
 
 // Import helper
-const { getTimeFromStart } = require("../helper/getTimeFromStart");
+const { getTimeFromStart } = require("../helper/getTimeFromStart.js");
 
 //import all database as constants
 const {
@@ -36,46 +36,50 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
       if (
         lectureInfo.status != "200" ||
         !lectureInfo.data ||
-        !lectureInfo.data?.Urls?.CaptionDownloadUrl
+        !lectureInfo.data.Urls ||
+        !lectureInfo.data.Urls.CaptionDownloadUrl
       ) {
+        console.log("Warning! Captions not found");
         return [];
       }
+      console.log(
+        `New caption data URL found: ${lectureInfo.data.Urls.CaptionDownloadUrl}`
+      );
 
       let parser = new srtParser2();
 
-      let getSrtConfig = {
-        method: "get",
-        url: lectureInfo.data?.Urls?.CaptionDownloadUrl,
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      };
+      let jsonSrt = [];
+      let lang = -1;
+      // Loop over  a few language options to try and capture the "correct" language
+      while ((!jsonSrt || !jsonSrt.length) && lang < 2) {
+        lang++;
+        const captionResponse = await axios.get(
+          `${lectureInfo.data.Urls.CaptionDownloadUrl}&language=${lang}`,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+            },
+          }
+        );
+        jsonSrt = await parser.fromSrt(captionResponse.data);
+      }
 
-      await axios(getSrtConfig).then(async (response) => {
-        let jsonSrt = await parser.fromSrt(response.data);
-
-        // Check if the file exsits
-        if (jsonSrt) {
-          // First save lecture information in captionFiles table
-          const lectureData = CaptionFile.build({
-            lecture_id: lectureId,
-          });
-
-          await lectureData.save();
-
-          // Then save lecture captions information in captionSentences table
-          await jsonSrt.forEach(async (sentence) => {
-            const sentenceData = CaptionSentence.build({
-              position: sentence.id,
-              start: getTimeFromStart(sentence.startTime),
-              body: sentence.text,
-              CaptionFileLectureId: lectureId,
-            });
-
-            await sentenceData.save();
+      // Check if the file exsits
+      if (jsonSrt && jsonSrt != []) {
+        // First save lecture information in captionFiles table
+        await CaptionFile.create({
+          lecture_id: lectureId,
+        });
+        // Then save lecture captions information in captionSentences table
+        for await (const sentence of jsonSrt) {
+          await CaptionSentence.create({
+            position: sentence.id,
+            start: getTimeFromStart(sentence.startTime),
+            body: sentence.text,
+            CaptionFileLectureId: lectureId,
           });
         }
-      });
+      }
     }
 
     const caption = await CaptionSentence.findAll({
@@ -260,7 +264,6 @@ export const postReports = async (reported, EditId, UserUpi) => {
     const result = await Report.findOne({ where: { UserUpi, EditId } });
     //if the vote exist and have the same value, we assume the user wish to undo the report
     if (result) {
-      console.log(result);
       await Report.destroy({
         where: {
           UserUpi,

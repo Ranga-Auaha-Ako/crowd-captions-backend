@@ -104,13 +104,14 @@ PanoptoStrategy.userProfile = function (accessToken, done) {
 passport.use(PanoptoStrategy);
 
 passport.serializeUser(function (user, done) {
-  console.log(user);
   done(null, `${user.upi}::${user.accessToken}`);
 });
 
 passport.deserializeUser(async function (serial, done) {
   const [upi, accessToken] = serial.split("::");
-  console.log(upi);
   const u = await User.findByPk(upi);
+  if (!u) {
+    return done("Please log in again", false);
+  }
   done(null, { ...u.get({ plain: true }), accessToken });
 });
