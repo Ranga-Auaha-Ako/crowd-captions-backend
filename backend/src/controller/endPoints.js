@@ -204,6 +204,36 @@ export const getEdits = async (sentenceId, upi) => {
   }
 };
 
+export const getUnapprovedEdits = async (lectureId) => {
+  try {
+    const result = await CaptionFile.findOne({
+      where: { lecture_id: lectureId },
+    });
+    if (result) {
+      return await CaptionSentence.findAll({
+        where: { CaptionFileLectureId: lectureId },
+      }).then(async (sentences) => {
+        let toRet = [];
+
+        for (let x = 0; x < sentences.length; x++) {
+          const edits = await Edit.findAll({
+            where: {
+              CaptionSentenceId: { [Op.eq]: sentences[x].id },
+              approved: false,
+            },
+          });
+          toRet.push(edits);
+        }
+        return toRet;
+      });
+    } else {
+      return "caption file not found";
+    }
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 export const postEdits = async (sentenceId, body, upi) => {
   try {
     // check if body is too long

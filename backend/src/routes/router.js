@@ -33,6 +33,7 @@ const {
 const {
   getCaptions,
   getEdits,
+  getUnapprovedEdits,
   postEdits,
   postVotes,
   postReports,
@@ -72,7 +73,18 @@ router.get("/edits/:sentenceId/:upi", async (req, res) => {
     if (result == "Caption sentence not found") {
       return res.status(404).send(result)
     } else {
-      console.log(result)
+      return res.json(result)
+    }
+  });
+});
+
+router.get("/UnapprovedEdits/:lectureId", async (req, res) => {
+  let { lectureId } = req.params;
+
+  await getUnapprovedEdits(lectureId).then(result => {
+    if (result == "caption file not found") {
+      return res.status(404).send(result)
+    } else {
       return res.json(result)
     }
   });
