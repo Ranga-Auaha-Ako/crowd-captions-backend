@@ -12,6 +12,7 @@
   "license": "MIT",
   "dependencies": {
     "@admin-bro/express": "^3.1.0",
+    "@admin-bro/sequelize": "^1.2.1",
     "admin-bro": "^4.0.1",
     "axios": "^0.22.0",
     "cors": "^2.8.5",
