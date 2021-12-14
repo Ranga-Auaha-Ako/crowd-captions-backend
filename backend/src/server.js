@@ -17,8 +17,10 @@ app.use(cors());
 
 //calls router.js, where the program handles all the requests from the frontend
 var router = require('./routes/router');
+var adminRouter = require('./routes/admin-router.js');
 
 app.use('/', router);
+app.use('/admin', adminRouter);
 
 //response for success and fail to connect
 app.listen(process.env.PORT, () => {

@@ -21,10 +21,10 @@ const {
 // Import mock data functions fron routerData
 const {
   captionFileData,
+  userData,
   captionSentenceData,
   editData,
   reportData,
-  userData,
   voteData,
   createCaption,
 } = require('../data.test/routerData.test');
@@ -33,9 +33,12 @@ const {
 const {
   getCaptions,
   getEdits,
+  getUnapprovedEdits,
   postEdits,
   postVotes,
   postReports,
+  approvals,
+  blocks
 } = require("../controller/endPoints");
 
 //handle request which access to root
@@ -70,7 +73,18 @@ router.get("/edits/:sentenceId/:upi", async (req, res) => {
     if (result == "Caption sentence not found") {
       return res.status(404).send(result)
     } else {
-      console.log(result)
+      return res.json(result)
+    }
+  });
+});
+
+router.get("/UnapprovedEdits/:lectureId", async (req, res) => {
+  let { lectureId } = req.params;
+
+  await getUnapprovedEdits(lectureId).then(result => {
+    if (result == "caption file not found") {
+      return res.status(404).send(result)
+    } else {
       return res.json(result)
     }
   });
@@ -96,7 +110,7 @@ router.post('/edit', async (req, res) => {
 //insert new vote into the database
 router.post('/vote', async (req, res) => {
   const { upvoted, EditId, upi } = req.body;
-  
+
   await postVotes(upvoted, EditId, upi).then(result => {
     if (typeof(result) == String) {
       return res.send(result)
@@ -107,10 +121,36 @@ router.post('/vote', async (req, res) => {
   });
 });
 
+router.post('/approvals', async (req, res) => {
+  const { approved, id } = req.body;
+
+  await approvals(approved, id).then(result => {
+    if (typeof(result) == String) {
+      return res.send(result)
+    }
+    else {
+      return res.json(result)
+    } 
+  });
+});
+
+router.post('/block', async (req, res) => {
+  const { blocked, id } = req.body;
+
+  await blocks(blocked, id).then(result => {
+    if (typeof(result) == String) {
+      return res.send(result)
+    }
+    else {
+      return res.json(result)
+    } 
+  });
+});
+
 //insert new report into the database
 router.post("/report", async (req, res) => {
   const { reported, EditId, UserUpi } = req.body;
-  
+
   await postReports(reported, EditId, UserUpi).then(result => {
     return res.json(result)
   });
