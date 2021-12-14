@@ -24,7 +24,6 @@ services:
       - ./backend/src:/code/src:ro
       - ./backend/package.json:/code/package.json
       - ./backend/package-lock.json:/code/package-lock.json
-      - node-modules:/opt/app/node_modules
-
-volumes:
-  node-modules:
+      # - node-modules:/opt/app/node_modules
+# volumes:
+#   node-modules:
