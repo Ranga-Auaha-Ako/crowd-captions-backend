@@ -11,6 +11,9 @@ AdminBro.registerAdapter(AdminBroSequelize)
 const adminBro = new AdminBro({
   databases: [db],
   rootPath: '/admin',
+  dashboard: {
+    component: AdminBro.bundle('../component/dashboard.jsx')
+  },
 })
 
 const router = AdminBroExpress.buildRouter(adminBro)

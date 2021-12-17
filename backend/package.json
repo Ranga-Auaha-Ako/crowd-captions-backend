@@ -29,6 +29,7 @@
     "pg": "^8.7.1",
     "pg-hstore": "^2.3.4",
     "sequelize": "^6.6.5",
+    "sequelize-auto-migrations-v2": "^1.2.1",
     "srt-parser-2": "^1.1.6",
     "tslib": "^2.3.1"
   },

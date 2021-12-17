@@ -1,0 +1,268 @@
+{
+    "tables": {
+        "CaptionFiles": {
+            "tableName": "CaptionFiles",
+            "schema": {
+                "lecture_id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "field": "lecture_id",
+                    "seqType": "Sequelize.STRING(100)"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "CaptionSentences": {
+            "tableName": "CaptionSentences",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "position": {
+                    "allowNull": false,
+                    "field": "position",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "start": {
+                    "allowNull": false,
+                    "field": "start",
+                    "seqType": "Sequelize.DOUBLE PRECISION"
+                },
+                "body": {
+                    "field": "body",
+                    "seqType": "Sequelize.STRING(200)"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "CaptionFileLectureId": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "CaptionFiles",
+                        "key": "lecture_id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "CaptionFileLectureId",
+                    "seqType": "Sequelize.STRING(100)"
+                }
+            },
+            "indexes": []
+        },
+        "Edits": {
+            "tableName": "Edits",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "body": {
+                    "field": "body",
+                    "seqType": "Sequelize.STRING(200)"
+                },
+                "approved": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "approved",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "blocked": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": false
+                    },
+                    "field": "blocked",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "CaptionSentenceId": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "CaptionSentences",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "CaptionSentenceId",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "UserUpi": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "Users",
+                        "key": "upi"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "UserUpi",
+                    "seqType": "Sequelize.STRING(128)"
+                }
+            },
+            "indexes": []
+        },
+        "Reports": {
+            "tableName": "Reports",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "UserUpi": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "Users",
+                        "key": "upi"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "UserUpi",
+                    "seqType": "Sequelize.STRING(128)"
+                },
+                "EditId": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "Edits",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "EditId",
+                    "seqType": "Sequelize.INTEGER"
+                }
+            },
+            "indexes": []
+        },
+        "Users": {
+            "tableName": "Users",
+            "schema": {
+                "access": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": 0
+                    },
+                    "field": "access",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "upi": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "field": "upi",
+                    "seqType": "Sequelize.STRING(128)"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                }
+            },
+            "indexes": []
+        },
+        "Votes": {
+            "tableName": "Votes",
+            "schema": {
+                "id": {
+                    "allowNull": false,
+                    "primaryKey": true,
+                    "autoIncrement": true,
+                    "field": "id",
+                    "seqType": "Sequelize.INTEGER"
+                },
+                "upvoted": {
+                    "allowNull": false,
+                    "defaultValue": {
+                        "value": true
+                    },
+                    "field": "upvoted",
+                    "seqType": "Sequelize.BOOLEAN"
+                },
+                "createdAt": {
+                    "allowNull": false,
+                    "field": "createdAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "updatedAt": {
+                    "allowNull": false,
+                    "field": "updatedAt",
+                    "seqType": "Sequelize.DATE"
+                },
+                "UserUpi": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "Users",
+                        "key": "upi"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "UserUpi",
+                    "seqType": "Sequelize.STRING(128)"
+                },
+                "EditId": {
+                    "allowNull": true,
+                    "references": {
+                        "model": "Edits",
+                        "key": "id"
+                    },
+                    "onDelete": "SET NULL",
+                    "onUpdate": "CASCADE",
+                    "field": "EditId",
+                    "seqType": "Sequelize.INTEGER"
+                }
+            },
+            "indexes": []
+        }
+    },
+    "revision": 1
+}
