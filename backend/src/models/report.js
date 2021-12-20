@@ -1,5 +1,5 @@
-'use strict';
-const { Model } = require('sequelize');
+"use strict";
+const { Model } = require("sequelize");
 module.exports = (sequelize, DataTypes) => {
   class Report extends Model {
     /**
@@ -14,10 +14,16 @@ module.exports = (sequelize, DataTypes) => {
     }
   }
   Report.init(
-    {},
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        primaryKey: true,
+        autoIncrement: true, // Automatically gets converted to SERIAL for postgres
+      },
+    },
     {
       sequelize,
-      modelName: 'Report',
+      modelName: "Report",
     }
   );
   return Report;

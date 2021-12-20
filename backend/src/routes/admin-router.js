@@ -12,6 +12,7 @@ const db = require("../models");
 const isSuperAdmin = ({ currentAdmin }) =>
   currentAdmin && currentAdmin.access === 2;
 const ownsCourse = ({ currentAdmin, record }) => {
+  console.log(record.get("courseAdmins"));
   return (
     isSuperAdmin({ currentAdmin }) ||
     currentAdmin.upi === record.get("courseAdmins")
@@ -21,6 +22,21 @@ const ownsCaptionsCourse = ({ currentAdmin, record }) => {
   return (
     isSuperAdmin({ currentAdmin }) ||
     currentAdmin.upi === record.param("CaptionFile.courseAdmins")
+  );
+};
+const ownsEditCourse = ({ currentAdmin, record }) => {
+  return (
+    isSuperAdmin({ currentAdmin }) ||
+    currentAdmin.upi ===
+      record.param("CaptionSentence.CaptionFile.courseAdmins")
+  );
+};
+const ownsReport = ({ currentAdmin, record }) => {
+  console.log(record.param("Edit.CaptionSentence.CaptionFile.courseAdmins"));
+  return (
+    isSuperAdmin({ currentAdmin }) ||
+    currentAdmin.upi ===
+      record.param("Edit.CaptionSentence.CaptionFile.courseAdmins")
   );
 };
 
@@ -45,14 +61,7 @@ const admin = new AdminJS({
           },
         },
         listProperties: ["name", "email", "access"],
-        editProperties: [
-          "upi",
-          "name",
-          "username",
-          "email",
-          "access",
-          "OwnedCourse",
-        ],
+        editProperties: ["upi", "name", "username", "email", "access"],
         showProperties: ["name", "username", "email", "access"],
         actions: {
           edit: { isAccessible: isSuperAdmin },
@@ -69,6 +78,42 @@ const admin = new AdminJS({
         delete: { isAccessible: ownsCourse },
         new: { isAccessible: ownsCourse },
         list: { isAccessible: ownsCourse },
+      },
+    },
+    {
+      resource: db.Edit,
+      actions: {
+        edit: { isAccessible: ownsEditCourse },
+        delete: { isAccessible: ownsEditCourse },
+        new: { isAccessible: ownsEditCourse },
+        list: { isAccessible: ownsEditCourse },
+      },
+    },
+    {
+      resource: db.CaptionSentence,
+      actions: {
+        edit: { isAccessible: ownsCaptionsCourse },
+        delete: { isAccessible: ownsCaptionsCourse },
+        new: { isAccessible: ownsCaptionsCourse },
+        list: { isAccessible: ownsCaptionsCourse },
+      },
+    },
+    {
+      resource: db.courseOwnerships,
+      actions: {
+        edit: { isAccessible: false },
+        delete: { isAccessible: false },
+        new: { isAccessible: false },
+        list: { isAccessible: true },
+      },
+    },
+    {
+      resource: db.Report,
+      actions: {
+        edit: { isAccessible: ownsReport },
+        delete: { isAccessible: ownsReport },
+        new: { isAccessible: ownsReport },
+        list: { isAccessible: ownsReport },
       },
     },
   ],
