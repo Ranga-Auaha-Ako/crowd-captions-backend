@@ -53,7 +53,7 @@ module.exports = {
         "Users",
         [
           {
-            access: 1,
+            access: i % 3,
             email: `abc123${i}@aucklanduni.ac.nz`,
             username: "abc123" + i,
             name: "Test User " + i,
