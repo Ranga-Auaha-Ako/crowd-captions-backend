@@ -277,45 +277,7 @@
                 }
             },
             "indexes": []
-        },
-        "courseOwnerships": {
-            "tableName": "courseOwnerships",
-            "schema": {
-                "createdAt": {
-                    "allowNull": false,
-                    "field": "createdAt",
-                    "seqType": "Sequelize.DATE"
-                },
-                "updatedAt": {
-                    "allowNull": false,
-                    "field": "updatedAt",
-                    "seqType": "Sequelize.DATE"
-                },
-                "UserUpi": {
-                    "primaryKey": true,
-                    "references": {
-                        "model": "Users",
-                        "key": "upi"
-                    },
-                    "onDelete": "CASCADE",
-                    "onUpdate": "CASCADE",
-                    "field": "UserUpi",
-                    "seqType": "Sequelize.STRING(128)"
-                },
-                "CaptionFileLectureId": {
-                    "primaryKey": true,
-                    "references": {
-                        "model": "CaptionFiles",
-                        "key": "lecture_id"
-                    },
-                    "onDelete": "CASCADE",
-                    "onUpdate": "CASCADE",
-                    "field": "CaptionFileLectureId",
-                    "seqType": "Sequelize.STRING(100)"
-                }
-            },
-            "indexes": []
         }
     },
-    "revision": 4
+    "revision": 3
 }

@@ -95,7 +95,7 @@ var migrationCommands = [{
                     "allowNull": false
                 },
                 "start": {
-                    "type": Sequelize.DOUBLE PRECISION,
+                    "type": Sequelize.DOUBLE,
                     "field": "start",
                     "allowNull": false
                 },

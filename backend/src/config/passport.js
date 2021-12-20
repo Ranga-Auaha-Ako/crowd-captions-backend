@@ -22,8 +22,16 @@ let PanoptoStrategy = new OAuth2Strategy(
     scope: ["api", "openid", "profile", "email"],
   },
   async function (accessToken, refreshToken, profile, done) {
+    console.log(profile);
     const [user, created] = await User.findOrCreate({
-      where: { upi: profile.id, access: 0 },
+      where: {
+        upi: profile.id,
+        access: 0,
+        email: profile._json.emailaddress,
+        name: profile.displayName,
+        username: profile._json.preferred_username,
+      },
+      include: { model: CaptionFile, as: "OwnedCourse" },
     });
     return done(null, { ...user.get({ plain: true }), accessToken });
   }

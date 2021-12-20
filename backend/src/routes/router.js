@@ -40,7 +40,7 @@ const {
   postVotes,
   postReports,
   approvals,
-  blocks
+  blocks,
 } = require("../controller/endPoints");
 
 //handle request which access to root
@@ -79,15 +79,7 @@ router.get("/login", passport.authenticate("oauth2"), async (req, res) => {
 });
 
 router.get("/success", isAuthenticated, async (req, res) => {
-  return res.json({
-    status: `Hi ${
-      req.user.upi
-    }! Wow, what a fun name. Here's the info we have on you:\n${JSON.stringify(
-      req.user,
-      null,
-      4
-    )}`,
-  });
+  return res.json(req.user);
 });
 
 // Test with id: 9592f9fc-0af4-49b8-9e38-ad6b004d17df
@@ -109,7 +101,7 @@ router.get("/edits/:sentenceId/", isAuthenticated, async (req, res) => {
     if (result == "Caption sentence not found") {
       return res.status(404).send(result);
     } else {
-      return res.json(result)
+      return res.json(result);
     }
   });
 });
@@ -117,11 +109,11 @@ router.get("/edits/:sentenceId/", isAuthenticated, async (req, res) => {
 router.get("/UnapprovedEdits/:lectureId", async (req, res) => {
   let { lectureId } = req.params;
 
-  await getUnapprovedEdits(lectureId).then(result => {
+  await getUnapprovedEdits(lectureId).then((result) => {
     if (result == "caption file not found") {
-      return res.status(404).send(result)
+      return res.status(404).send(result);
     } else {
-      return res.json(result)
+      return res.json(result);
     }
   });
 });
@@ -154,29 +146,27 @@ router.post("/vote", isAuthenticated, async (req, res) => {
   });
 });
 
-router.post('/approvals', async (req, res) => {
+router.post("/approvals", async (req, res) => {
   const { approved, id } = req.body;
 
-  await approvals(approved, id).then(result => {
-    if (typeof(result) == String) {
-      return res.send(result)
+  await approvals(approved, id).then((result) => {
+    if (typeof result == String) {
+      return res.send(result);
+    } else {
+      return res.json(result);
     }
-    else {
-      return res.json(result)
-    } 
   });
 });
 
-router.post('/block', async (req, res) => {
+router.post("/block", async (req, res) => {
   const { blocked, id } = req.body;
 
-  await blocks(blocked, id).then(result => {
-    if (typeof(result) == String) {
-      return res.send(result)
+  await blocks(blocked, id).then((result) => {
+    if (typeof result == String) {
+      return res.send(result);
+    } else {
+      return res.json(result);
     }
-    else {
-      return res.json(result)
-    } 
   });
 });
 
