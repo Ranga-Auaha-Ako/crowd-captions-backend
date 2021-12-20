@@ -18,6 +18,7 @@ module.exports = (sequelize, DataTypes) => {
   }
   User.init(
     {
+      // 0=Student, 1=CourseAdmin, 2=SuperAdmin, -1=Disabled User
       access: {
         type: DataTypes.INTEGER,
         allowNull: false,

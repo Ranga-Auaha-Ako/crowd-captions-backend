@@ -68,7 +68,7 @@ function isAuthenticated(req, res, next) {
 // Authentication callback route
 router.get(
   "/auth/callback",
-  passport.authenticate("oauth2", { failureRedirect: "/login" }),
+  passport.authenticate("oauth2", { failureRedirect: "/success" }),
   function (req, res) {
     // Successful authentication, redirect home.
     res.redirect("/success");

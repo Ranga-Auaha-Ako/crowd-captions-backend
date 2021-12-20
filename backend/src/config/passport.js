@@ -12,6 +12,10 @@ const {
   Vote,
 } = require("../models");
 
+const SUPERADMIN_IDS = ["a47fa57c-d8ef-4433-8b9b-adaa00556393"];
+const COURSEADMIN_IDS = ["a47fa57c-d8ef-4433-8b9b-adaa00556393"];
+const BANNED_IDS = [];
+
 let PanoptoStrategy = new OAuth2Strategy(
   {
     authorizationURL: `https://${process.env.panopto_host}/Panopto/oauth2/connect/authorize`,
@@ -22,18 +26,35 @@ let PanoptoStrategy = new OAuth2Strategy(
     scope: ["api", "openid", "profile", "email"],
   },
   async function (accessToken, refreshToken, profile, done) {
-    console.log(profile);
-    const [user, created] = await User.findOrCreate({
-      where: {
+    // First attempt to find user
+    let user = await User.findByPk(profile.id, {
+      include: { model: CaptionFile, as: "OwnedCourse" },
+    });
+    if (!user) {
+      // Determine permission level
+      // 0=Student, 1=CourseAdmin, 2=SuperAdmin, -1=Disabled User
+      let access = 0;
+      if (BANNED_IDS.includes(profile.id)) {
+        access = -1;
+      } else if (SUPERADMIN_IDS.includes(profile.id)) {
+        access = 2;
+      } else if (COURSEADMIN_IDS.includes(profile.id)) {
+        access = 1;
+      }
+      // Create user
+      user = User.create({
         upi: profile.id,
-        access: 0,
+        access: access,
         email: profile._json.emailaddress,
         name: profile.displayName,
         username: profile._json.preferred_username,
-      },
-      include: { model: CaptionFile, as: "OwnedCourse" },
-    });
-    return done(null, { ...user.get({ plain: true }), accessToken });
+      });
+    } else {
+      // User exists, get it.
+      user = user.get({ plain: true });
+    }
+    console.log(user);
+    return done(null, { ...user, accessToken });
   }
 );
 

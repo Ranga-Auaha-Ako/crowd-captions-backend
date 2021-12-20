@@ -21,10 +21,10 @@ const adminBro = new AdminBro({
 let router = express.Router();
 router.use((req, res, next) => {
   console.log(req.user);
-  if (req.isAuthenticated()) {
+  if (req.isAuthenticated() && req.user.access > 0) {
     req.session.adminUser = {
       user: req.user?.upi,
-      email: `${req.user?.upi}@test.aucklanduni.ac.nz`,
+      email: req.user.email,
     };
     next();
   } else {
