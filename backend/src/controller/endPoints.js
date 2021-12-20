@@ -16,7 +16,7 @@ const {
   Report,
   User,
   Vote,
-  courseOwnership,
+  courseOwnerships,
 } = require("../models");
 
 export const getCaptions = async (lectureId, upi, accessToken) => {
@@ -368,22 +368,13 @@ export const blocks = async (blocked, id) => {
   }
 };
 
-export const getCaptionByOwner = async (userId) => {
-  try {
-    const files = await sequelize.query('select * from "courseOwnerships"', { type: QueryTypes.SELECT })
-    console.log(files)
-    let result = JSON.parse(JSON.stringify(files));
-    return result
-  } catch(err) {
-      console.log(err)
-  }
-};
-
 export const getReports = async (userId) => {
   try {
-    const files = getCaptionByOwner(userId)
-    console.log(files[0].createAt)
+    const files = courseOwnerships.findAll({
+      where: { UserUpi : userId}
+    })
     return files
+    
   } catch(err) {
       console.log(err)
   }
