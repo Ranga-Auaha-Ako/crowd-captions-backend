@@ -66,24 +66,25 @@ module.exports = {
       );
     }
 
-    for (let i = 0; i < 10; i++) {
-      await queryInterface.bulkInsert(
-        "Edits",
-        [
-          {
-            id: i,
-            body: `This is a test body ${i}`,
-            approved: false,
-            blocked: false,
-            CaptionSentenceId: i,
-            UserUpi: "abc1231",
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          },
-        ],
-        {}
-      );
-    }
+    for (let x = 0; x < 20; x++)
+      for (let i = 0; i < 10; i++) {
+        await queryInterface.bulkInsert(
+          "Edits",
+          [
+            {
+              id: x * 10 + i,
+              body: `This is a test body ${x * 10 + i}`,
+              approved: false,
+              blocked: false,
+              CaptionSentenceId: x,
+              UserUpi: "abc1231",
+              createdAt: new Date(),
+              updatedAt: new Date(),
+            },
+          ],
+          {}
+        );
+      }
 
     for (let i = 0; i < 10; i++) {
       await queryInterface.bulkInsert("Votes", [
@@ -98,12 +99,23 @@ module.exports = {
       ]);
     }
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 200; i++) {
       await queryInterface.bulkInsert("Reports", [
         {
           id: i,
           EditId: i,
           UserUpi: "abc1231",
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+    }
+
+    for (let i = 0; i < 10; i++) {
+      await queryInterface.bulkInsert("courseOwnerships", [
+        {
+          CaptionFileLectureId: i,
+          UserUpi: "abc123" + i,
           createdAt: new Date(),
           updatedAt: new Date(),
         },
@@ -118,6 +130,7 @@ module.exports = {
      * Example:
      * await queryInterface.bulkDelete('People', null, {});
      */
+    await queryInterface.bulkDelete("courseOwnerships", null, {});
     await queryInterface.bulkDelete("CaptionFiles", null, {});
     await queryInterface.bulkDelete("CaptionSentences", null, {});
     await queryInterface.bulkDelete("Edits", null, {});

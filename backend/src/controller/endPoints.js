@@ -2,6 +2,7 @@ const { Op } = require("sequelize");
 const qs = require("qs");
 const axios = require("axios");
 const { default: srtParser2 } = require("srt-parser-2");
+import { QueryTypes } from 'sequelize';
 
 // Import helper
 const { getTimeFromStart } = require("../helper/getTimeFromStart.js");
@@ -15,6 +16,7 @@ const {
   Report,
   User,
   Vote,
+  courseOwnerships,
 } = require("../models");
 
 export const getCaptions = async (lectureId, upi, accessToken) => {
@@ -362,5 +364,51 @@ export const blocks = async (blocked, id) => {
     }
   } catch (err) {
     console.log(err);
+  }
+};
+
+export const getReports = async (userId) => {
+  try {
+    return await courseOwnerships.findAll({
+      where: { UserUpi : userId}
+    }).then(async (result) => {
+      let toRec = [];
+      
+      for (let i = 0; i < result.length; i++){
+        const temp = await CaptionSentence.findAll({
+          where: {
+            CaptionFileLectureId: result[i].CaptionFileLectureId
+          },
+        });
+        toRec.push(temp);
+      }
+      return toRec;
+    }).then(async (result) => {
+      let toRec = [];
+      for (let i = 0; i < result[0].length; i++){
+        const temp = await Edit.findAll({
+          where: {
+            CaptionSentenceId: result[0][i].dataValues.id
+          },
+        });
+        toRec = toRec.concat(temp);
+      }
+      return toRec; 
+    }).then(async (result) => {
+      let toRec = [];
+      
+      for (let i = 0; i < result.length; i++){
+        const temp = await Report.findAll({
+          where: {
+            EditId: result[i].id
+          },
+        });
+        toRec = toRec.concat(temp);
+      }
+      return toRec;
+    })
+    
+  } catch(err) {
+      console.log(err)
   }
 };
