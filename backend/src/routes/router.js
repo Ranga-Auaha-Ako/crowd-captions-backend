@@ -61,7 +61,8 @@ router.get("/", async (req, res) => {
 // Middleware to ensure authentication
 function isAuthenticated(req, res, next) {
   if (req.isAuthenticated()) return next();
-  res.redirect("/login");
+  res.status(401);
+  res.json({ status: "User not authenticated" });
 }
 
 // Authentication callback route
@@ -76,6 +77,11 @@ router.get(
 
 router.get("/login", passport.authenticate("oauth2"), async (req, res) => {
   return res.json({ status: "You are logged in!" });
+});
+
+router.get("/logout", async (req, res) => {
+  req.logout();
+  res.redirect("/?loggedout");
 });
 
 router.get("/success", isAuthenticated, async (req, res) => {

@@ -19,7 +19,8 @@ const adminBro = new AdminBro({
 });
 
 let router = express.Router();
-router.use("/admin", (req, res, next) => {
+router.use((req, res, next) => {
+  console.log(req.user);
   if (req.isAuthenticated()) {
     req.session.adminUser = {
       user: req.user?.upi,
@@ -27,9 +28,12 @@ router.use("/admin", (req, res, next) => {
     };
     next();
   } else {
-    res.redirect("/login");
+    res.status(401);
+    res.json({ status: "User not authenticated" });
   }
 });
+
+router.use("/logout", (req, res) => res.redirect("/logout"));
 
 router = AdminBroExpress.buildRouter(adminBro, router);
 
