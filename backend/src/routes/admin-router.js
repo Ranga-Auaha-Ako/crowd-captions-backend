@@ -84,7 +84,6 @@ const admin = new AdminJS({
 let router = express.Router();
 
 router.use((req, res, next) => {
-  console.log(req.user);
   if (req.isAuthenticated() && req.user.access > 0) {
     req.session.adminUser = req.user;
     next();
