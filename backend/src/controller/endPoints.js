@@ -22,7 +22,6 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
     const result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
     });
-    console.log(result);
     if (!result) {
       // Confirm user is able to view this lecture. Break if not
       const lectureInfo = await axios.get(

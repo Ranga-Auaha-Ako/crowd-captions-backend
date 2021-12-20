@@ -27,9 +27,7 @@ let PanoptoStrategy = new OAuth2Strategy(
   },
   async function (accessToken, refreshToken, profile, done) {
     // First attempt to find user
-    let user = await User.findByPk(profile.id, {
-      include: { model: CaptionFile, as: "OwnedCourse" },
-    });
+    let user = await User.findByPk(profile.id);
     if (!user) {
       // Determine permission level
       // 0=Student, 1=CourseAdmin, 2=SuperAdmin, -1=Disabled User
@@ -53,7 +51,6 @@ let PanoptoStrategy = new OAuth2Strategy(
       // User exists, get it.
       user = user.get({ plain: true });
     }
-    console.log(user);
     return done(null, { ...user, accessToken });
   }
 );
@@ -138,7 +135,9 @@ passport.serializeUser(function (user, done) {
 
 passport.deserializeUser(async function (serial, done) {
   const [upi, accessToken] = serial.split("::");
-  const u = await User.findByPk(upi);
+  const u = await User.findByPk(upi, {
+    include: { model: CaptionFile, as: "OwnedCourse" },
+  });
   if (!u) {
     return done("Please log in again", false);
   }
