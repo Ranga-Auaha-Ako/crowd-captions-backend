@@ -45,7 +45,7 @@ const {
 
 //handle request which access to root
 router.get("/", async (req, res) => {
-  await sequelize.sync({ force: true });
+  // await sequelize.sync({ force: true });
 
   // populate the database with mock data, for testing purpose
   //await captionFileData(CaptionFile);
