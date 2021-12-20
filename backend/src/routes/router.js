@@ -41,6 +41,7 @@ const {
   postReports,
   approvals,
   blocks,
+  getReports,
 } = require("../controller/endPoints");
 
 //handle request which access to root
@@ -185,4 +186,12 @@ router.post("/report", isAuthenticated, async (req, res) => {
   });
 });
 
+//insert new report into the database
+router.get("/getReport", async (req, res) => {
+  const { uid } = req.body;
+  console.log(uid)
+  await getReports(uid).then((result) => {
+    return res.json(result);
+  });
+});
 module.exports = router;

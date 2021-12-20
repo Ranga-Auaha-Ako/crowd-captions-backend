@@ -2,6 +2,7 @@ const { Op } = require("sequelize");
 const qs = require("qs");
 const axios = require("axios");
 const { default: srtParser2 } = require("srt-parser-2");
+import { QueryTypes } from 'sequelize';
 
 // Import helper
 const { getTimeFromStart } = require("../helper/getTimeFromStart.js");
@@ -15,6 +16,7 @@ const {
   Report,
   User,
   Vote,
+  courseOwnership,
 } = require("../models");
 
 export const getCaptions = async (lectureId, upi, accessToken) => {
@@ -363,5 +365,26 @@ export const blocks = async (blocked, id) => {
     }
   } catch (err) {
     console.log(err);
+  }
+};
+
+export const getCaptionByOwner = async (userId) => {
+  try {
+    const files = await sequelize.query('select * from "courseOwnerships"', { type: QueryTypes.SELECT })
+    console.log(files)
+    let result = JSON.parse(JSON.stringify(files));
+    return result
+  } catch(err) {
+      console.log(err)
+  }
+};
+
+export const getReports = async (userId) => {
+  try {
+    const files = getCaptionByOwner(userId)
+    console.log(files[0].createAt)
+    return files
+  } catch(err) {
+      console.log(err)
   }
 };

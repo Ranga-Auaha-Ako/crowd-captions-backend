@@ -109,6 +109,17 @@ module.exports = {
         },
       ]);
     }
+
+    for (let i = 0; i < 10; i++) {
+      await queryInterface.bulkInsert("courseOwnerships", [
+        {
+          CaptionFileLectureId: i,
+          UserUpi: "abc123" + i,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        },
+      ]);
+    }
   },
 
   down: async (queryInterface, Sequelize) => {
