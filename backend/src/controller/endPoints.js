@@ -386,16 +386,27 @@ export const getReports = async (userId) => {
       return toRec;
     }).then(async (result) => {
       let toRec = [];
-      console.log(result.length)
       for (let i = 0; i < result[0].length; i++){
         const temp = await Edit.findAll({
           where: {
             CaptionSentenceId: result[0][i].dataValues.id
           },
         });
-        toRec.push(temp);
+        toRec = toRec.concat(temp);
       }
       return toRec; 
+    }).then(async (result) => {
+      let toRec = [];
+      
+      for (let i = 0; i < result.length; i++){
+        const temp = await Report.findAll({
+          where: {
+            EditId: result[i].id
+          },
+        });
+        toRec = toRec.concat(temp);
+      }
+      return toRec;
     })
     
   } catch(err) {

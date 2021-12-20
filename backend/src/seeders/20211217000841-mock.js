@@ -99,7 +99,7 @@ module.exports = {
       ]);
     }
 
-    for (let i = 0; i < 10; i++) {
+    for (let i = 0; i < 200; i++) {
       await queryInterface.bulkInsert("Reports", [
         {
           id: i,
