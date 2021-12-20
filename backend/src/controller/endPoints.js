@@ -370,10 +370,33 @@ export const blocks = async (blocked, id) => {
 
 export const getReports = async (userId) => {
   try {
-    const files = courseOwnerships.findAll({
+    return await courseOwnerships.findAll({
       where: { UserUpi : userId}
+    }).then(async (result) => {
+      let toRec = [];
+      
+      for (let i = 0; i < result.length; i++){
+        const temp = await CaptionSentence.findAll({
+          where: {
+            CaptionFileLectureId: result[i].CaptionFileLectureId
+          },
+        });
+        toRec.push(temp);
+      }
+      return toRec;
+    }).then(async (result) => {
+      let toRec = [];
+      console.log(result.length)
+      for (let i = 0; i < result[0].length; i++){
+        const temp = await Edit.findAll({
+          where: {
+            CaptionSentenceId: result[0][i].dataValues.id
+          },
+        });
+        toRec.push(temp);
+      }
+      return toRec; 
     })
-    return files
     
   } catch(err) {
       console.log(err)
