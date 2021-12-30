@@ -1,22 +1,6 @@
 # Settings for development. Default to insecure (but fine for development) credentials to save setup time
 
 services:
-  caddy:
-    image: lucaslorentz/caddy-docker-proxy:ci-alpine
-    ports:
-      - 80:80
-      - 443:443
-    environment:
-      - CADDY_INGRESS_NETWORKS=caddy
-    networks:
-      - caddy
-    volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - caddy_data:/data
-      # - ./certs:/certs
-    restart: unless-stopped
-    logging:
-      driver: none
   db:
     image: postgres:13
     environment:
@@ -25,8 +9,6 @@ services:
       POSTGRES_USER: ${POSTGRES_PASS:-crowdcaptions}
     volumes:
       - db-data:/var/lib/postgresql/data
-    networks:
-      - dbnet
     ports:
       - 5432:5432
 
@@ -50,18 +32,6 @@ services:
       - 9230:9230
     depends_on:
       - db
-    networks:
-      - caddy
-      - dbnet
-    labels:
-      caddy: localhost
-      caddy.reverse_proxy: "{{upstreams 8000}}"
 
 volumes:
   db-data:
-  caddy_data: {}
-
-networks:
-  caddy:
-    external: true
-  dbnet:
