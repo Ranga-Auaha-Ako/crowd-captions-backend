@@ -1,6 +1,5 @@
 services:
   backend:
-    restart: always
     build: backend
     environment:
       - NODE_ENV=development

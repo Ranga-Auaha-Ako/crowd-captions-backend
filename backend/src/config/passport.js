@@ -11,6 +11,8 @@ const {
   User,
   Vote,
 } = require("../models");
+const env = process.env.NODE_ENV || "development";
+const config = require(__dirname + "/../config/config.js")[env];
 
 const SUPERADMIN_IDS = ["a47fa57c-d8ef-4433-8b9b-adaa00556393"];
 const COURSEADMIN_IDS = ["a47fa57c-d8ef-4433-8b9b-adaa00556393"];
@@ -22,7 +24,8 @@ let PanoptoStrategy = new OAuth2Strategy(
     tokenURL: `https://${process.env.panopto_host}/Panopto/oauth2/connect/token`,
     clientID: process.env.panopto_clientId,
     clientSecret: process.env.panopto_clientSecret,
-    callbackURL: "http://localhost:8000/auth/callback",
+    callbackURL: "/auth/callback",
+    proxy: true,
     scope: ["api", "openid", "profile", "email"],
   },
   async function (accessToken, refreshToken, profile, done) {
@@ -143,3 +146,29 @@ passport.deserializeUser(async function (serial, done) {
   }
   done(null, { ...u.get({ plain: true }), accessToken });
 });
+
+// JWT for API
+const JwtStrategy = require("passport-jwt").Strategy,
+  ExtractJwt = require("passport-jwt").ExtractJwt;
+
+const ApiStrategy = new JwtStrategy(
+  {
+    jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+    secretOrKey: config.jwt_secret,
+    issuer: "crowdcaptions.raa.amazon.auckland.ac.nz",
+    audience: "api.crowdcaptions.raa.amazon.auckland.ac.nz",
+  },
+  async (jwt_payload, done) => {
+    console.log(jwt_payload.upi);
+    const u = await User.findByPk(jwt_payload.upi);
+    if (!u) {
+      return done("Please log in again", false);
+    }
+    done(null, {
+      ...u.get({ plain: true }),
+      accessToken: jwt_payload.accessToken,
+    });
+  }
+);
+
+passport.use(ApiStrategy);

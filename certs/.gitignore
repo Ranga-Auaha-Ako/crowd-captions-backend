@@ -1,0 +1,5 @@
+# https://stackoverflow.com/a/932982/3902950
+# Ignore everything in this directory (eg certs)
+*
+# Except this file
+!.gitignore
