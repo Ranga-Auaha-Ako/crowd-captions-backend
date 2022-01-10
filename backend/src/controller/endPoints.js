@@ -2,7 +2,7 @@ const { Op } = require("sequelize");
 const qs = require("qs");
 const axios = require("axios");
 const { default: srtParser2 } = require("srt-parser-2");
-import { QueryTypes } from 'sequelize';
+import { QueryTypes } from "sequelize";
 
 // Import helper
 const { getTimeFromStart } = require("../helper/getTimeFromStart.js");
@@ -50,12 +50,13 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
       let parser = new srtParser2();
 
       let jsonSrt = [];
-      let lang = -1;
+      let lang = -2;
       // Loop over  a few language options to try and capture the "correct" language
       while ((!jsonSrt || !jsonSrt.length) && lang < 2) {
         lang++;
+        const langString = lang !== -2 ? "" : `&language=${lang}`;
         const captionResponse = await axios.get(
-          `${lectureInfo.data.Urls.CaptionDownloadUrl}&language=${lang}`,
+          `${lectureInfo.data.Urls.CaptionDownloadUrl}${langString}`,
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
@@ -369,46 +370,49 @@ export const blocks = async (blocked, id) => {
 
 export const getReports = async (userId) => {
   try {
-    return await courseOwnerships.findAll({
-      where: { UserUpi : userId}
-    }).then(async (result) => {
-      let toRec = [];
-      
-      for (let i = 0; i < result.length; i++){
-        const temp = await CaptionSentence.findAll({
-          where: {
-            CaptionFileLectureId: result[i].CaptionFileLectureId
-          },
-        });
-        toRec.push(temp);
-      }
-      return toRec;
-    }).then(async (result) => {
-      let toRec = [];
-      for (let i = 0; i < result[0].length; i++){
-        const temp = await Edit.findAll({
-          where: {
-            CaptionSentenceId: result[0][i].dataValues.id
-          },
-        });
-        toRec = toRec.concat(temp);
-      }
-      return toRec; 
-    }).then(async (result) => {
-      let toRec = [];
-      
-      for (let i = 0; i < result.length; i++){
-        const temp = await Report.findAll({
-          where: {
-            EditId: result[i].id
-          },
-        });
-        toRec = toRec.concat(temp);
-      }
-      return toRec;
-    })
-    
-  } catch(err) {
-      console.log(err)
+    return await courseOwnerships
+      .findAll({
+        where: { UserUpi: userId },
+      })
+      .then(async (result) => {
+        let toRec = [];
+
+        for (let i = 0; i < result.length; i++) {
+          const temp = await CaptionSentence.findAll({
+            where: {
+              CaptionFileLectureId: result[i].CaptionFileLectureId,
+            },
+          });
+          toRec.push(temp);
+        }
+        return toRec;
+      })
+      .then(async (result) => {
+        let toRec = [];
+        for (let i = 0; i < result[0].length; i++) {
+          const temp = await Edit.findAll({
+            where: {
+              CaptionSentenceId: result[0][i].dataValues.id,
+            },
+          });
+          toRec = toRec.concat(temp);
+        }
+        return toRec;
+      })
+      .then(async (result) => {
+        let toRec = [];
+
+        for (let i = 0; i < result.length; i++) {
+          const temp = await Report.findAll({
+            where: {
+              EditId: result[i].id,
+            },
+          });
+          toRec = toRec.concat(temp);
+        }
+        return toRec;
+      });
+  } catch (err) {
+    console.log(err);
   }
 };
