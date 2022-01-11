@@ -56,7 +56,8 @@ router.get("/auth/jwt", async (req, res) => {
     }
   );
   res.cookie("jwt-auth", token);
-  return res.json({ token });
+  // return res.json({ token });
+  return res.send("<script>window.close();</script > ");
 });
 
 router.get("/logout", async (req, res) => {
