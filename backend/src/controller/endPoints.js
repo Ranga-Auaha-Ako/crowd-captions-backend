@@ -46,6 +46,17 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
       console.log(
         `New caption data URL found: ${lectureInfo.data.Urls.CaptionDownloadUrl}`
       );
+      // Get cookies for requesting captions
+      // NB - ZAC 19th Jan 2022: At this stage requesting captions requires the user to call "Panopto/api/v1/auth/legacyLogin" to get some cookies to simulate using the site as a regular user. This does that.
+      const authData = await axios.get(
+        "https://aucklandtest.au.panopto.com/Panopto/api/v1/auth/legacyLogin",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+          },
+        }
+      );
+      const [aspxAuthCookie, csrfCookie] = authData.headers["set-cookie"];
 
       let parser = new srtParser2();
 
@@ -60,6 +71,7 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
           {
             headers: {
               Authorization: `Bearer ${accessToken}`,
+              cookie: `${aspxAuthCookie} ${csrfCookie}`,
             },
           }
         );
