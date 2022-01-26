@@ -61,7 +61,7 @@ var adminRouter = require("./routes/admin-router.js");
 
 app.use("/", router);
 app.use("/admin", adminRouter);
-app.use("/api", passport.authenticate("jwt", { session: false }), apiRouter);
+app.use("/api", passport.authenticate("jwt"), apiRouter);
 
 //response for success and fail to connect
 app.listen(process.env.PORT, () => {

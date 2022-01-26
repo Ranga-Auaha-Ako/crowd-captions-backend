@@ -134,7 +134,8 @@ router.use((req, res, next) => {
     next();
   } else {
     res.status(401);
-    res.redirect("/login");
+    res.send("No")
+    // res.redirect("/login");
   }
 });
 

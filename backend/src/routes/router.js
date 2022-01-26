@@ -50,7 +50,7 @@ router.get("/auth/jwt", async (req, res) => {
     { upi: req.user.upi, accessToken: req.user.accessToken },
     config.jwt_secret,
     {
-      expiresIn: "30m",
+      expiresIn: "90m",
       issuer: "crowdcaptions.raa.amazon.auckland.ac.nz",
       audience: "api.crowdcaptions.raa.amazon.auckland.ac.nz",
     }
