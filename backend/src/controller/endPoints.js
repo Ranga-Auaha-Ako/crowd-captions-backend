@@ -27,7 +27,7 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
     if (!result) {
       // Confirm user is able to view this lecture. Break if not
       const lectureInfo = await axios.get(
-        `https://aucklandtest.au.panopto.com/Panopto/api/v1/sessions/${lectureId}`,
+        `https://${process.env.panopto_host}/Panopto/api/v1/sessions/${lectureId}`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,
@@ -49,7 +49,7 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
       // Get cookies for requesting captions
       // NB - ZAC 19th Jan 2022: At this stage requesting captions requires the user to call "Panopto/api/v1/auth/legacyLogin" to get some cookies to simulate using the site as a regular user. This does that.
       const authData = await axios.get(
-        "https://aucklandtest.au.panopto.com/Panopto/api/v1/auth/legacyLogin",
+        `https://${process.env.panopto_host}/Panopto/api/v1/auth/legacyLogin`,
         {
           headers: {
             Authorization: `Bearer ${accessToken}`,

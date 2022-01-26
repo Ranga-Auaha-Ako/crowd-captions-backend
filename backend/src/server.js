@@ -47,8 +47,7 @@ const cors = require("cors");
 app.use(
   cors({
     origin: [
-      "https://aucklandtest.au.panopto.com",
-      "https://auckland.au.panopto.com",
+      `https://${process.env.panopto_host}`,
     ],
     credentials: true,
   })
