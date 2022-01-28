@@ -148,6 +148,7 @@ module.exports = {
      * await queryInterface.bulkDelete('People', null, {});
      */
     await queryInterface.bulkDelete("courseOwnerships", null, {});
+    await queryInterface.bulkDelete("courses", null, {});
     await queryInterface.bulkDelete("CaptionFiles", null, {});
     await queryInterface.bulkDelete("CaptionSentences", null, {});
     await queryInterface.bulkDelete("Edits", null, {});
