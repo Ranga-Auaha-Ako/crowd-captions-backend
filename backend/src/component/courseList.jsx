@@ -1,10 +1,12 @@
 import { ApiClient } from "adminjs";
 import { Box } from "@adminjs/design-system";
 import { useState, useEffect } from "react";
-
 const api = new ApiClient();
 
-const Dashboard = () => {
+const courses = [1,2,3]
+console.log("hello world");
+
+const courseList = () => {
   const [data, setData] = useState({});
 
   useEffect(() => {
@@ -17,11 +19,13 @@ const Dashboard = () => {
     <Box variant="grey">
       <Box variant="white">
         <div>
-          <h1> Title For dashboard</h1> 
+            {courses.map((num) => (
+                <h3 key={num}>{num}</h3>
+            ))}
         </div>
       </Box>
     </Box>
   );
 };
 
-export default Dashboard;
+export default courseList;

@@ -45,6 +45,7 @@ const admin = new AdminJS({
   rootPath: "/admin",
   dashboard: {
     component: AdminJS.bundle("../component/dashboard.jsx"),
+    component: AdminJS.bundle("../component/courseList.jsx"),
   },
   resources: [
     {
@@ -87,6 +88,15 @@ const admin = new AdminJS({
         delete: { isAccessible: ownsEditCourse },
         new: { isAccessible: ownsEditCourse },
         list: { isAccessible: ownsEditCourse },
+      },
+    },
+    {
+      resource: db.courses,
+      actions: {
+        edit: { isAccessible: isSuperAdmin },
+        delete: { isAccessible: isSuperAdmin },
+        new: { isAccessible: isSuperAdmin },
+        list: { isAccessible: isSuperAdmin },
       },
     },
     {

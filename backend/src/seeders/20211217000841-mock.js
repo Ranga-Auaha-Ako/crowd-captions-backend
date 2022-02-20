@@ -29,6 +29,23 @@ module.exports = {
     }
 
     for (let i = 0; i < 10; i++) {
+      // Add 10 rows
+      await queryInterface.bulkInsert(
+        "courses",
+        [
+          {
+            courseId: i,
+            courseName: "course name" + i,
+            timePeriod: "2022 summer school",
+            createdAt: new Date(),
+            updatedAt: new Date(),
+          },
+        ],
+        {}
+      );
+    }
+
+    for (let i = 0; i < 10; i++) {
       for (let j = 0; j < 10; j++) {
         await queryInterface.bulkInsert(
           "CaptionSentences",
@@ -131,6 +148,7 @@ module.exports = {
      * await queryInterface.bulkDelete('People', null, {});
      */
     await queryInterface.bulkDelete("courseOwnerships", null, {});
+    await queryInterface.bulkDelete("courses", null, {});
     await queryInterface.bulkDelete("CaptionFiles", null, {});
     await queryInterface.bulkDelete("CaptionSentences", null, {});
     await queryInterface.bulkDelete("Edits", null, {});
