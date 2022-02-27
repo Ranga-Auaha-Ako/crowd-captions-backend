@@ -10,8 +10,6 @@ services:
       - POSTGRES_HOST
       - POSTGRES_PORT
       - panopto_host
-      - panopto_username
-      - panopto_password
       - panopto_clientId
       - panopto_clientSecret
     ports:
