@@ -61,3 +61,9 @@ variable "cert_arn" {
   description = "ARN for the certificate"
   type        = string
 }
+
+variable "app_version" {
+  description = "Version of the tool to deploy"
+  type        = string
+  default     = "latest"
+}

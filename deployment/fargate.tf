@@ -15,7 +15,7 @@ resource "aws_ecs_task_definition" "backend_task" {
   container_definitions = jsonencode([
     {
       name      = "${var.app_name}_container",
-      image     = "809789462832.dkr.ecr.ap-southeast-2.amazonaws.com/${var.app_name}_repo:latest",
+      image     = "809789462832.dkr.ecr.ap-southeast-2.amazonaws.com/${var.app_name}_repo:${var.app_version}",
       memory    = 512,
       essential = true,
       portMappings = [
