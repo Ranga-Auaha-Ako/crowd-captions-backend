@@ -9,6 +9,8 @@ import session from "express-session";
 var cookieSession = require("cookie-session");
 var passport = require("passport");
 require("./config/passport");
+const env = process.env.NODE_ENV || "development";
+const config = require("./config/config.js")[env];
 
 //import express as the framwork for the router and endpoints
 const app = express();
@@ -18,13 +20,14 @@ app.use(express.urlencoded({ extended: true }));
 app.use(
   cookieSession({
     name: "session",
-    keys: ["Deeply4-Showplace-Overcoat"],
-    // sameSite: "None",
-    // secure: true,
+    keys: [config.jwt_secret],
+    sameSite: "strict",
+    // secure: env !== "development",
     signed: true,
     overwrite: true,
+    httpOnly: true,
   })
-); // TODO: CRITICAL!!! CHANGE THIS TO LOAD FROM ENV
+);
 app.use(passport.initialize());
 app.use(passport.session());
 // Catch the case where there is an error and log the user out for safety
@@ -46,9 +49,7 @@ app.use(function (err, req, res, next) {
 const cors = require("cors");
 app.use(
   cors({
-    origin: [
-      `https://${process.env.panopto_host}`,
-    ],
+    origin: [`https://${process.env.panopto_host}`],
     credentials: true,
   })
 );

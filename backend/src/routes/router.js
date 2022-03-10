@@ -55,7 +55,12 @@ router.get("/auth/jwt", async (req, res) => {
       audience: "api.crowdcaptions.raa.amazon.auckland.ac.nz",
     }
   );
-  res.cookie("jwt-auth", token);
+  res.cookie("jwt-auth", token, {
+    maxAge: 3600000,
+    secure: true,
+    httpOnly: true,
+    sameSite: "strict",
+  });
   // return res.json({ token });
   return res.send("<script>window.close();</script > ");
 });
