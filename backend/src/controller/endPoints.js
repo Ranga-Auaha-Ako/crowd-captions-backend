@@ -146,27 +146,30 @@ export const getEdits = async (sentenceId, upi) => {
           CaptionSentenceId: sentenceId,
           blocked: false,
         },
+        include: [
+          {
+            model: Report,
+          },
+          {
+            model: Vote,
+          },
+        ],
       }).then(async (result) => {
         let toRet = [];
 
-        //find votes for all the edits
         for (let x = 0; x < result.length; x++) {
-          const votes = await Vote.findAll({
-            where: {
-              EditId: { [Op.eq]: result[x].id },
-            },
-          });
-          let hasUserUpVoted = null;
+          // Determine report status
+          const hasUserReported = await result[x].Reports.some(
+            (e) => e.UserUpi == upi
+          );
 
-          for (let i = 0; i < votes.length; i++) {
-            if (upi == votes[i]["dataValues"]["UserUpi"]) {
-              hasUserUpVoted = votes[i]["dataValues"]["upvoted"];
-            }
-            //console.log(votes[i] ) //["dataValues"]["upvoted"]
-          }
+          //find votes for all the edits
+          const userVote = result[x].Votes.find((v) => v.UserUpi);
+          const hasUserUpVoted = userVote ? userVote.upvoted : null;
 
-          const upVotes = await votes.filter((x) => x.upvoted).length;
-          const downVotes = await votes.filter((x) => !x.upvoted).length;
+          const upVotes = await result[x].Votes.filter((i) => i.upvoted).length;
+          const downVotes = await result[x].Votes.filter((i) => !i.upvoted)
+            .length;
 
           //return the result to the front end
           toRet.push({
@@ -179,7 +182,7 @@ export const getEdits = async (sentenceId, upi) => {
             CaptionSentenceId: result[x].CaptionSentenceId,
             UserId: result[x].UserId,
             upvoted: hasUserUpVoted,
-            reported: null,
+            reported: hasUserReported,
             upVotes: upVotes,
             downVotes: downVotes,
             votes: upVotes - downVotes,
@@ -327,7 +330,19 @@ export const postReports = async (reported, EditId, UserUpi) => {
         EditId,
         UserUpi,
       });
-      await data.save();
+      // Reset Vote to a downvote if any
+      const result = await Vote.findOne({ where: { UserUpi, EditId } });
+      if (result && result.upvoted) {
+        // Result was upvoted. Change to a downvote and save.
+        result.upvoted = false;
+        await result.save();
+      } else if (!result) {
+        await Vote.create({
+          upvoted: false,
+          EditId,
+          UserUpi,
+        });
+      }
       return {
         message: "created new report",
         data,
