@@ -397,48 +397,86 @@ export const blocks = async (blocked, id) => {
 
 export const getReports = async (userId) => {
   try {
-    return await courseOwnerships
-      .findAll({
-        where: { UserUpi: userId },
-      })
-      .then(async (result) => {
-        let toRec = [];
+    const user = await User.findOne({
+      where: { upi: userId },
+      include: {
+        model: CaptionFile,
+        as: "OwnedCourse",
+      },
+    });
+    let ownedCourseIDs;
+    if (user.access === 2) {
+      // Show all course reports if superuser
+      const allCourses = await CaptionFile.findAll();
+      ownedCourseIDs = allCourses.map((course) => course.lecture_id);
+    } else {
+      ownedCourseIDs = user.OwnedCourse.map((course) => course.lecture_id);
+    }
+    return await Report.findAll({
+      where: {
+        "$Edit.CaptionSentence.CaptionFileLectureId$": {
+          [Op.in]: ownedCourseIDs,
+        },
+      },
+      include: [
+        {
+          model: Edit,
+          attributes: ["body", "approved", "blocked", "id"],
+          include: [
+            {
+              model: CaptionSentence,
+              attributes: ["body", "CaptionFileLectureId", "start"],
+              // include: CaptionFile,
+            },
+            { model: User },
+          ],
+        },
+        { model: User, attributes: ["username", "email", "name"] },
+      ],
+      attributes: ["id", "createdAt"],
+    });
+    // return await courseOwnerships
+    //   .findAll({
+    //     where: { UserUpi: userId },
+    //   })
+    //   .then(async (result) => {
+    //     let toRec = [];
 
-        for (let i = 0; i < result.length; i++) {
-          const temp = await CaptionSentence.findAll({
-            where: {
-              CaptionFileLectureId: result[i].CaptionFileLectureId,
-            },
-          });
-          toRec.push(temp);
-        }
-        return toRec;
-      })
-      .then(async (result) => {
-        let toRec = [];
-        for (let i = 0; i < result[0].length; i++) {
-          const temp = await Edit.findAll({
-            where: {
-              CaptionSentenceId: result[0][i].dataValues.id,
-            },
-          });
-          toRec = toRec.concat(temp);
-        }
-        return toRec;
-      })
-      .then(async (result) => {
-        let toRec = [];
+    //     for (let i = 0; i < result.length; i++) {
+    //       const temp = await CaptionSentence.findAll({
+    //         where: {
+    //           CaptionFileLectureId: result[i].CaptionFileLectureId,
+    //         },
+    //       });
+    //       toRec.push(temp);
+    //     }
+    //     return toRec;
+    //   })
+    //   .then(async (result) => {
+    //     let toRec = [];
+    //     for (let i = 0; i < result[0].length; i++) {
+    //       const temp = await Edit.findAll({
+    //         where: {
+    //           CaptionSentenceId: result[0][i].dataValues.id,
+    //         },
+    //       });
+    //       toRec = toRec.concat(temp);
+    //     }
+    //     return toRec;
+    //   })
+    //   .then(async (result) => {
+    //     let toRec = [];
 
-        for (let i = 0; i < result.length; i++) {
-          const temp = await Report.findAll({
-            where: {
-              EditId: result[i].id,
-            },
-          });
-          toRec = toRec.concat(temp);
-        }
-        return toRec;
-      });
+    //     for (let i = 0; i < result.length; i++) {
+    //       const temp = await Report.findAll({
+    //         where: {
+    //           EditId: result[i].id,
+    //         },
+    //       });
+    //       toRec = toRec.concat(temp);
+    //     }
+    //     return toRec;
+    //   });
   } catch (err) {
     console.log(err);
   }

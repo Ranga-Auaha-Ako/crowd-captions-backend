@@ -23,8 +23,10 @@ router.get("/", async (req, res) => {
   //await editData(Edit);
   //await reportData(Report);
   //await voteData(Vote);
+  // res.send(`received on port: ${process.env.PORT}`);
 
-  res.send(`received on port: ${process.env.PORT}`);
+  // Redirect to Documentation
+  res.redirect("https://docs.crowdcaptions.raa.amazon.auckland.ac.nz/");
 });
 
 // Authentication callback route

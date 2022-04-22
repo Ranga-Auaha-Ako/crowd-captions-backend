@@ -1,7 +1,7 @@
 require("dotenv").config();
 module.exports = {
   development: {
-    logging: false,
+    logging: process.env.SQL_LOG,
     database: process.env.POSTGRES_DB,
     username: "crowdcaptions",
     password: "crowdcaptions",
@@ -16,6 +16,7 @@ module.exports = {
     jwt_secret: "crowdcaptions",
   },
   production: {
+    logging: false,
     database: process.env.POSTGRES_DB,
     username: process.env.POSTGRES_USER,
     password: process.env.POSTGRES_PASS,

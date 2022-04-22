@@ -12,6 +12,11 @@ require("./config/passport");
 const env = process.env.NODE_ENV || "development";
 const config = require("./config/config.js")[env];
 
+// Initialise Winston for logging
+const auditLogger = require("./utilities/log");
+
+auditLogger.info("Initialised Winston audit logging");
+
 //import express as the framwork for the router and endpoints
 const app = express();
 app.use(express.json());

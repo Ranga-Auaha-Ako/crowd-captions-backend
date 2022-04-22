@@ -123,7 +123,6 @@ router.post("/approvals", async (req, res) => {
 
 router.post("/block", async (req, res) => {
   const { blocked, id } = req.body;
-
   await blocks(blocked, id).then((result) => {
     if (typeof result == String) {
       return res.send(result);
@@ -144,9 +143,7 @@ router.post("/report", isAuthenticated, async (req, res) => {
 
 //insert new report into the database
 router.get("/getReport", async (req, res) => {
-  const { uid } = req.body;
-  console.log(uid);
-  await getReports(uid).then((result) => {
+  await getReports(req.user.upi).then((result) => {
     return res.json(result);
   });
 });
