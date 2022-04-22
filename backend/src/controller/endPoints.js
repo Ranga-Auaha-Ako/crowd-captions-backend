@@ -412,6 +412,7 @@ export const getReports = async (userId) => {
     } else {
       ownedCourseIDs = user.OwnedCourse.map((course) => course.lecture_id);
     }
+    // Get reports, filtered by only the courses the user owns
     return await Report.findAll({
       where: {
         "$Edit.CaptionSentence.CaptionFileLectureId$": {
@@ -429,54 +430,34 @@ export const getReports = async (userId) => {
               // include: CaptionFile,
             },
             { model: User },
+            {
+              model: Vote,
+              attributes: [
+                "upvoted",
+
+                [sequelize.fn("count", sequelize.col("*")), "votes"],
+              ],
+            },
           ],
         },
         { model: User, attributes: ["username", "email", "name"] },
       ],
       attributes: ["id", "createdAt"],
+      group: [
+        "Report.id",
+        "Edit.id",
+        "Edit.body",
+        "Edit.approved",
+        "Edit.blocked",
+        "Edit.CaptionSentence.id",
+        "Edit.User.access",
+        "Edit.User.email",
+        "Edit.User.upi",
+        "Edit.Votes.id",
+        "User.upi",
+        "Edit.Votes.upvoted",
+      ],
     });
-    // return await courseOwnerships
-    //   .findAll({
-    //     where: { UserUpi: userId },
-    //   })
-    //   .then(async (result) => {
-    //     let toRec = [];
-
-    //     for (let i = 0; i < result.length; i++) {
-    //       const temp = await CaptionSentence.findAll({
-    //         where: {
-    //           CaptionFileLectureId: result[i].CaptionFileLectureId,
-    //         },
-    //       });
-    //       toRec.push(temp);
-    //     }
-    //     return toRec;
-    //   })
-    //   .then(async (result) => {
-    //     let toRec = [];
-    //     for (let i = 0; i < result[0].length; i++) {
-    //       const temp = await Edit.findAll({
-    //         where: {
-    //           CaptionSentenceId: result[0][i].dataValues.id,
-    //         },
-    //       });
-    //       toRec = toRec.concat(temp);
-    //     }
-    //     return toRec;
-    //   })
-    //   .then(async (result) => {
-    //     let toRec = [];
-
-    //     for (let i = 0; i < result.length; i++) {
-    //       const temp = await Report.findAll({
-    //         where: {
-    //           EditId: result[i].id,
-    //         },
-    //       });
-    //       toRec = toRec.concat(temp);
-    //     }
-    //     return toRec;
-    //   });
   } catch (err) {
     console.log(err);
   }
