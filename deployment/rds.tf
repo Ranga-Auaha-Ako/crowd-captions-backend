@@ -4,7 +4,7 @@ resource "aws_db_instance" "default" {
   engine_version         = "13.3"
   instance_class         = "db.t4g.micro"
   username               = replace(var.app_name, "/[^a-zA-Z0-9]/", "")
-  password               = var.db_password
+  password               = local.db_creds.password
   db_name                = replace(var.app_name, "/[^a-zA-Z0-9]/", "")
   parameter_group_name   = "default.postgres13"
   db_subnet_group_name   = aws_db_subnet_group.default.name
