@@ -21,7 +21,7 @@ const {
 
 export const getCaptions = async (lectureId, upi, accessToken) => {
   try {
-    const result = await CaptionFile.findOne({
+    let result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
     });
     if (!result) {
@@ -91,7 +91,7 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
       // Check if the file exsits
       if (jsonSrt && jsonSrt != []) {
         // First save lecture information in captionFiles table
-        await CaptionFile.create({
+        result = await CaptionFile.create({
           lecture_id: lectureId,
           lecture_folder: lectureInfo.data.FolderDetails.Id,
           lecture_name: lectureInfo.data.Name,
@@ -113,7 +113,6 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
         CaptionFileLectureId: { [Op.eq]: lectureId },
       },
     });
-
     return {
       Caption_file: await Promise.all(
         // Return each caption sentence and get its best edit
@@ -137,6 +136,10 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
           };
         })
       ),
+      meta: {
+        Lecture_id: result.lecture_id,
+        Video_name: result.lecture_name,
+      },
     };
   } catch (err) {
     console.log(err);
