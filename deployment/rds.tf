@@ -1,7 +1,7 @@
 resource "aws_db_instance" "default" {
   allocated_storage      = 20
   engine                 = "postgres"
-  engine_version         = "13.3"
+  engine_version         = "13.4"
   instance_class         = "db.t4g.micro"
   username               = replace(var.app_name, "/[^a-zA-Z0-9]/", "")
   password               = local.db_creds.password

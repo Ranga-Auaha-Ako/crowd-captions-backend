@@ -37,12 +37,12 @@ resource "aws_ecs_task_definition" "backend_task" {
         { name = "PORT", value = "${tostring(var.server_port)}" },
         { name = "POSTGRES_DB", value = replace(var.app_name, "/[^a-zA-Z0-9]/", "") },
         { name = "POSTGRES_USER", value = "${replace(var.app_name, "/[^a-zA-Z0-9]/", "")}" },
-        { name = "POSTGRES_PASS", value = data.local.db_creds.password },
+        { name = "POSTGRES_PASS", value = local.db_creds.password },
         { name = "POSTGRES_HOST", value = aws_db_instance.default.address },
         { name = "POSTGRES_PORT", value = "${tostring(aws_db_instance.default.port)}" },
         { name = "panopto_host", value = var.panopto_host },
-        { name = "panopto_clientId", value = data.local.panopto.client_id },
-        { name = "panopto_clientSecret", value = data.local.panopto.client_secret },
+        { name = "panopto_clientId", value = local.panopto_creds.client_id },
+        { name = "panopto_clientSecret", value = local.panopto_creds.client_secret },
         { name = "JWT_SECRET", value = data.aws_secretsmanager_secret_version.jwt_secret.secret_string }
       ]
     }
