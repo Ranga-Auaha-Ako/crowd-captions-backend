@@ -6,14 +6,16 @@
   "scripts": {
     "sequelize": "dotenv sequelize",
     "test": "mocha src/test/test.js",
-    "dev": "env NODE_DEV=development nodemon src/index.js"
+    "dev": "env NODE_DEV=development nodemon --inspect=0.0.0.0:9229 src/index.js"
   },
   "author": "team-skrrt-skrrt",
   "license": "MIT",
   "dependencies": {
     "@adminjs/design-system": "^2.0.2",
     "@adminjs/express": "^4.0.1",
+    "@adminjs/logger": "^2.1.0",
     "@adminjs/sequelize": "^2.1.0",
+    "@aws-sdk/client-cloudwatch-logs": "^3.58.0",
     "adminjs": "^5.3.3",
     "axios": "^0.22.0",
     "cookie-session": "^2.0.0",
@@ -34,7 +36,9 @@
     "sequelize": "^6.6.5",
     "sequelize-lazy-migrations": "^1.0.4",
     "srt-parser-2": "^1.1.6",
-    "tslib": "^2.3.1"
+    "tslib": "^2.3.1",
+    "winston": "^3.6.0",
+    "winston-cloudwatch": "^4.0.1"
   },
   "devDependencies": {
     "nodemon": "^2.0.12",

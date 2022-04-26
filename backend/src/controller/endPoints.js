@@ -21,11 +21,11 @@ const {
 
 export const getCaptions = async (lectureId, upi, accessToken) => {
   try {
-    const result = await CaptionFile.findOne({
+    let result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
     });
     if (!result) {
-      // Confirm user is able to view this lecture. Break if not
+      // Confirm user is able to view this lecture. Break if not. Fetch folder
       const lectureInfo = await axios.get(
         `https://${process.env.panopto_host}/Panopto/api/v1/sessions/${lectureId}`,
         {
@@ -41,11 +41,21 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
         !lectureInfo.data.Urls.CaptionDownloadUrl
       ) {
         console.log("Warning! Captions not found");
-        return [];
+        return { error: "Captions not found" };
       }
       console.log(
-        `New caption data URL found: ${lectureInfo.data.Urls.CaptionDownloadUrl}`
+        `New caption data URL found: ${lectureInfo.data.Urls.CaptionDownloadUrl} in folder ${lectureInfo.data.FolderDetails.Id}`
       );
+      // Check to see if someone owns the folder, otherwise discard video
+      const courseOwnership = await courseOwnerships.findOne({
+        where: {
+          lecture_folder: lectureInfo.data.FolderDetails.Id,
+        },
+      });
+      if (!courseOwnership) {
+        return { error: "Video has no CrowdCaptions owner" };
+      }
+      // console.log(lectureInfo);
       // Get cookies for requesting captions
       // NB - ZAC 19th Jan 2022: At this stage requesting captions requires the user to call "Panopto/api/v1/auth/legacyLogin" to get some cookies to simulate using the site as a regular user. This does that.
       const authData = await axios.get(
@@ -81,8 +91,10 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
       // Check if the file exsits
       if (jsonSrt && jsonSrt != []) {
         // First save lecture information in captionFiles table
-        await CaptionFile.create({
+        result = await CaptionFile.create({
           lecture_id: lectureId,
+          lecture_folder: lectureInfo.data.FolderDetails.Id,
+          lecture_name: lectureInfo.data.Name,
         });
         // Then save lecture captions information in captionSentences table
         for await (const sentence of jsonSrt) {
@@ -101,7 +113,6 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
         CaptionFileLectureId: { [Op.eq]: lectureId },
       },
     });
-
     return {
       Caption_file: await Promise.all(
         // Return each caption sentence and get its best edit
@@ -125,6 +136,10 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
           };
         })
       ),
+      meta: {
+        Lecture_id: result.lecture_id,
+        Video_name: result.lecture_name,
+      },
     };
   } catch (err) {
     console.log(err);
@@ -353,17 +368,32 @@ export const postReports = async (reported, EditId, UserUpi) => {
   }
 };
 
-export const approvals = async (approved, id) => {
+export const approvals = async (approved, id, UserUpi) => {
   try {
-    let update = { approved: approved };
-    const result = await Edit.findOne({ where: { id } });
-    //if the vote exists in the db
+    const result = await Edit.findOne({
+      where: { id },
+      include: [{ model: CaptionSentence, include: [{ model: CaptionFile }] }],
+    });
     if (result) {
-      const change = await Edit.update(update, {
+      // Check to see if user owns the folder, otherwise stop here
+      const courseOwnership = await courseOwnerships.findOne({
         where: {
-          id,
+          lecture_folder: result.CaptionSentence.CaptionFile.lecture_folder,
+          UserUpi,
         },
       });
+      if (!courseOwnership) {
+        return { error: "User does not own the folder" };
+      }
+      // Update edit to be approved/unapproved
+      const change = await Edit.update(
+        { approved: approved },
+        {
+          where: {
+            id,
+          },
+        }
+      );
       return {
         message: "edit approvment state changed",
         change,
@@ -374,17 +404,32 @@ export const approvals = async (approved, id) => {
   }
 };
 
-export const blocks = async (blocked, id) => {
+export const blocks = async (blocked, id, UserUpi) => {
   try {
-    let update = { blocked: blocked };
-    const result = await Edit.findOne({ where: { id } });
-    //if the vote exists in the db
+    const result = await Edit.findOne({
+      where: { id },
+      include: [{ model: CaptionSentence, include: [{ model: CaptionFile }] }],
+    });
     if (result) {
-      const change = await Edit.update(update, {
+      // Check to see if user owns the folder, otherwise stop here
+      const courseOwnership = await courseOwnerships.findOne({
         where: {
-          id,
+          lecture_folder: result.CaptionSentence.CaptionFile.lecture_folder,
+          UserUpi,
         },
       });
+      if (!courseOwnership) {
+        return { error: "User does not own the folder" };
+      }
+      // Update edit to be blocked/unblocked
+      const change = await Edit.update(
+        { blocked: blocked },
+        {
+          where: {
+            id,
+          },
+        }
+      );
       return {
         message: "edit block state changed",
         change,
@@ -395,50 +440,105 @@ export const blocks = async (blocked, id) => {
   }
 };
 
+export const getOwned = async (upi) => {
+  try {
+    const user = await User.findOne({
+      where: { upi },
+      include: {
+        model: courseOwnerships,
+      },
+    });
+    const ownedFolders = user.courseOwnerships.map(
+      (course) => course.lecture_folder
+    );
+    if (!ownedFolders) {
+      return [];
+    }
+    const ownedCourses = await CaptionFile.findAll({
+      where: {
+        lecture_folder: {
+          [Op.in]: ownedFolders,
+        },
+      },
+    });
+    return {
+      folders: user.courseOwnerships.map((folder) => ({
+        name: folder.folder_name,
+        id: folder.lecture_folder,
+      })),
+      courses: ownedCourses,
+    };
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 export const getReports = async (userId) => {
   try {
-    return await courseOwnerships
-      .findAll({
-        where: { UserUpi: userId },
-      })
-      .then(async (result) => {
-        let toRec = [];
+    const user = await User.findOne({
+      where: { upi: userId },
+      include: {
+        model: courseOwnerships,
+      },
+    });
+    const ownedFolders = user.courseOwnerships.map(
+      (course) => course.lecture_folder
+    );
+    // Get reports, filtered by only the courses the user owns
+    return await Report.findAll({
+      // Show all course reports if superuser
+      where:
+        user.access === 2
+          ? undefined
+          : {
+              "Edit.CaptionSentence.CaptionFile.lecture_folder": {
+                [Op.in]: ownedFolders,
+              },
+            },
+      include: [
+        {
+          model: Edit,
+          attributes: ["body", "approved", "blocked", "id"],
+          include: [
+            {
+              model: CaptionSentence,
+              attributes: ["body", "start"],
+              include: {
+                model: CaptionFile,
+                attributes: ["lecture_id", "lecture_name"],
+              },
+            },
+            { model: User },
+            {
+              model: Vote,
+              attributes: [
+                "upvoted",
 
-        for (let i = 0; i < result.length; i++) {
-          const temp = await CaptionSentence.findAll({
-            where: {
-              CaptionFileLectureId: result[i].CaptionFileLectureId,
+                [sequelize.fn("count", sequelize.col("*")), "votes"],
+              ],
             },
-          });
-          toRec.push(temp);
-        }
-        return toRec;
-      })
-      .then(async (result) => {
-        let toRec = [];
-        for (let i = 0; i < result[0].length; i++) {
-          const temp = await Edit.findAll({
-            where: {
-              CaptionSentenceId: result[0][i].dataValues.id,
-            },
-          });
-          toRec = toRec.concat(temp);
-        }
-        return toRec;
-      })
-      .then(async (result) => {
-        let toRec = [];
-
-        for (let i = 0; i < result.length; i++) {
-          const temp = await Report.findAll({
-            where: {
-              EditId: result[i].id,
-            },
-          });
-          toRec = toRec.concat(temp);
-        }
-        return toRec;
-      });
+          ],
+        },
+        { model: User, attributes: ["username", "email", "name"] },
+      ],
+      attributes: ["id", "createdAt"],
+      group: [
+        "Report.id",
+        "Edit.id",
+        "Edit.body",
+        "Edit.approved",
+        "Edit.blocked",
+        "Edit.CaptionSentence.id",
+        "Edit.CaptionSentence.CaptionFile.lecture_id",
+        "Edit.CaptionSentence.CaptionFile.lecture_name",
+        "Edit.User.access",
+        "Edit.User.email",
+        "Edit.User.upi",
+        "Edit.Votes.id",
+        "User.upi",
+        "Edit.Votes.upvoted",
+      ],
+    });
   } catch (err) {
     console.log(err);
   }

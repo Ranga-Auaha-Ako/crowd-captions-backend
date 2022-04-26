@@ -122,3 +122,7 @@ dist
 backend/src/config/config.js
 
 .DS_Store
+
+backend/src/migrations/_current.json
+
+backend/src/migrations/_current_bak.json

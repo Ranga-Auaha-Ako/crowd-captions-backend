@@ -27,30 +27,6 @@ variable "panopto_host" {
   default     = "aucklandtest.au.panopto.com"
 }
 
-variable "panopto_client_id" {
-  description = "Panopto Client ID"
-  type        = string
-  sensitive   = true
-}
-
-variable "panopto_client_secret" {
-  description = "Panopto Client Secret"
-  type        = string
-  sensitive   = true
-}
-
-variable "db_password" {
-  description = "RDS root user password"
-  type        = string
-  sensitive   = true
-}
-
-variable "jwt_secret" {
-  description = "JWT secret for login"
-  type        = string
-  sensitive   = true
-}
-
 variable "health_check_path" {
   description = "Path to check to see how service is doing"
   type        = string

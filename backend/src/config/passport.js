@@ -14,7 +14,11 @@ const {
 const env = process.env.NODE_ENV || "development";
 const config = require(__dirname + "/../config/config.js")[env];
 
-const SUPERADMIN_IDS = ["a47fa57c-d8ef-4433-8b9b-adaa00556393", "fd68c42d-6c99-4673-922e-ad9b0041c4b9", "1c3cc1b3-575b-4dd9-980b-adb800112247"];
+const SUPERADMIN_IDS = [
+  "a47fa57c-d8ef-4433-8b9b-adaa00556393",
+  "fd68c42d-6c99-4673-922e-ad9b0041c4b9",
+  "1c3cc1b3-575b-4dd9-980b-adb800112247",
+];
 const COURSEADMIN_IDS = ["a47fa57c-d8ef-4433-8b9b-adaa00556393"];
 const BANNED_IDS = [];
 
@@ -138,9 +142,7 @@ passport.serializeUser(function (user, done) {
 
 passport.deserializeUser(async function (serial, done) {
   const [upi, accessToken] = serial.split("::");
-  const u = await User.findByPk(upi, {
-    include: { model: CaptionFile, as: "OwnedCourse" },
-  });
+  const u = await User.findByPk(upi);
   if (!u) {
     return done("Please log in again", false);
   }

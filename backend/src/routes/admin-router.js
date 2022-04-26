@@ -1,6 +1,8 @@
+import AdminJSLogger from "@adminjs/logger";
 const AdminJS = require("adminjs");
 const AdminJSExpress = require("@adminjs/express");
 const AdminJSSequelize = require("@adminjs/sequelize");
+const { WinstonAdapter } = require("../utilities/adminLogResource");
 
 var passport = require("passport");
 require("../config/passport");
@@ -114,7 +116,7 @@ const admin = new AdminJS({
         edit: { isAccessible: false },
         delete: { isAccessible: false },
         new: { isAccessible: false },
-        list: { isAccessible: true },
+        list: { isAccessible: isSuperAdmin },
       },
     },
     {
@@ -126,6 +128,13 @@ const admin = new AdminJS({
         list: { isAccessible: ownsReport },
       },
     },
+    {
+      resource: new WinstonAdapter(),
+      options: {
+        navigation: false,
+        actions: {},
+      },
+    },
   ],
   branding: {
     companyName: "Crowd Captions",
@@ -134,6 +143,7 @@ const admin = new AdminJS({
   },
   loginPath: "/login",
   logoutPath: "/logout",
+  features: [AdminJSLogger({})],
 });
 
 let router = express.Router();
@@ -144,7 +154,7 @@ router.use((req, res, next) => {
     next();
   } else {
     res.status(401);
-    res.send(`<a href="/login">Please log in to continue</a>`)
+    res.send(`<a href="/login">Please log in to continue</a>`);
     // res.redirect("/login");
   }
 });
