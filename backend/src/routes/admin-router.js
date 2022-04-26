@@ -65,7 +65,7 @@ const admin = new AdminJS({
         },
         listProperties: ["name", "email", "access"],
         editProperties: ["upi", "name", "username", "email", "access"],
-        showProperties: ["name", "username", "email", "access", "OwnedCourse"],
+        showProperties: ["name", "username", "email", "access"],
         actions: {
           edit: { isAccessible: isSuperAdmin },
           delete: { isAccessible: isSuperAdmin },

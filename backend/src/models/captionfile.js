@@ -14,10 +14,18 @@ module.exports = (sequelize, DataTypes) => {
   }
   CaptionFile.init(
     {
+      lecture_name: {
+        type: DataTypes.TEXT,
+        allowNull: false,
+      },
       lecture_id: {
         type: DataTypes.STRING(100),
         allowNull: false,
         primaryKey: true,
+      },
+      lecture_folder: {
+        type: DataTypes.STRING(100),
+        allowNull: true,
       },
     },
     {

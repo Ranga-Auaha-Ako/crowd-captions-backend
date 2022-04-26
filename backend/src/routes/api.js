@@ -29,7 +29,7 @@ const {
 const {
   getCaptions,
   getEdits,
-  getUnapprovedEdits,
+  getOwned,
   postEdits,
   postVotes,
   postReports,
@@ -69,17 +69,18 @@ router.get("/edits/:sentenceId/", isAuthenticated, async (req, res) => {
   });
 });
 
-router.get("/UnapprovedEdits/:lectureId", async (req, res) => {
-  let { lectureId } = req.params;
+// Not currently required
+// router.get("/UnapprovedEdits/:lectureId", async (req, res) => {
+//   let { lectureId } = req.params;
 
-  await getUnapprovedEdits(lectureId).then((result) => {
-    if (result == "caption file not found") {
-      return res.status(404).send(result);
-    } else {
-      return res.json(result);
-    }
-  });
-});
+//   await getUnapprovedEdits(lectureId).then((result) => {
+//     if (result == "caption file not found") {
+//       return res.status(404).send(result);
+//     } else {
+//       return res.json(result);
+//     }
+//   });
+// });
 
 //insert new edits into the database
 router.post("/edit", isAuthenticated, async (req, res) => {
@@ -109,10 +110,16 @@ router.post("/vote", isAuthenticated, async (req, res) => {
   });
 });
 
+router.get("/getOwned", async (req, res) => {
+  await getOwned(req.user.upi).then((result) => {
+    return res.json(result);
+  });
+});
+
 router.post("/approvals", async (req, res) => {
   const { approved, id } = req.body;
 
-  await approvals(approved, id).then((result) => {
+  await approvals(approved, id, req.user.upi).then((result) => {
     if (typeof result == String) {
       return res.send(result);
     } else {
@@ -123,7 +130,7 @@ router.post("/approvals", async (req, res) => {
 
 router.post("/block", async (req, res) => {
   const { blocked, id } = req.body;
-  await blocks(blocked, id).then((result) => {
+  await blocks(blocked, id, req.user.upi).then((result) => {
     if (typeof result == String) {
       return res.send(result);
     } else {
