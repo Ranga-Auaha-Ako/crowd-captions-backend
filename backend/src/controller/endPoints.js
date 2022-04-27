@@ -112,30 +112,61 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
       where: {
         CaptionFileLectureId: { [Op.eq]: lectureId },
       },
+      attributes: ["id", "body", "start"],
+      include: {
+        model: Edit,
+        where: { blocked: false },
+        attributes: ["body", "id"],
+        include: [
+          {
+            model: Vote,
+            attributes: [
+              "upvoted",
+              [sequelize.fn("count", sequelize.col("Votes.id")), "votes"],
+            ],
+          },
+        ],
+        group: ["Edit.id", "Edit.body", "Votes.id", "Votes.upvoted"],
+        separate: true,
+      },
+    });
+    const captions = caption.map((sentence) => {
+      const bestEdit = sentence.Edits.length
+        ? sentence.Edits.reduce((max, edit) => {
+            const upVoteObject = edit.Votes.find(
+              (vote) => vote.upvoted === true
+            );
+            const upVotes = upVoteObject
+              ? parseInt(upVoteObject.dataValues.votes, 10)
+              : 0;
+            const downVoteObject = edit.Votes.find(
+              (vote) => vote.upvoted === false
+            );
+            const downVotes = downVoteObject
+              ? parseInt(downVoteObject.dataValues.votes, 10)
+              : 0;
+            const voteScore = upVotes - downVotes;
+
+            return max.voteScore > voteScore
+              ? max
+              : { ...edit.dataValues, voteScore, upVotes, downVotes };
+          }, {})
+        : {};
+      return {
+        id: sentence.id,
+        start: sentence.start,
+        body: sentence.body,
+        bestEdit: {
+          id: bestEdit.id,
+          body: bestEdit.body,
+          upVotes: bestEdit.upVotes,
+          downVotes: bestEdit.downVotes,
+          votes: bestEdit.voteScore,
+        },
+      };
     });
     return {
-      Caption_file: await Promise.all(
-        // Return each caption sentence and get its best edit
-        caption.map(async (item) => {
-          let editData = await getEdits(item.id, upi);
-          let bestEdit = null;
-
-          if (editData) {
-            bestEdit = editData.sort((a, b) => (a.votes < b.votes ? 1 : -1))[0];
-          }
-
-          if (bestEdit == null) {
-            bestEdit = {};
-          }
-
-          return {
-            id: item.id,
-            start: item.start,
-            body: item.body,
-            bestEdit: bestEdit,
-          };
-        })
-      ),
+      Caption_file: captions,
       meta: {
         Lecture_id: result.lecture_id,
         Video_name: result.lecture_name,
@@ -149,61 +180,57 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
 export const getEdits = async (sentenceId, upi) => {
   try {
     //fetch the parent caption sentence
-    const parentCapiton = await CaptionSentence.findAll({
+    const parentCaption = await CaptionSentence.findOne({
       where: {
         id: sentenceId,
       },
+      include: [
+        {
+          model: Edit,
+          include: [
+            {
+              model: Report,
+              where: {
+                UserUpi: upi,
+              },
+              separate: true,
+            },
+            {
+              model: Vote,
+            },
+          ],
+          where: {
+            blocked: false,
+          },
+          separate: true,
+        },
+      ],
     });
     //check if the parent sentence exist
-    if (!!parentCapiton.length) {
-      return await Edit.findAll({
-        where: {
-          CaptionSentenceId: sentenceId,
-          blocked: false,
-        },
-        include: [
-          {
-            model: Report,
-          },
-          {
-            model: Vote,
-          },
-        ],
-      }).then(async (result) => {
-        let toRet = [];
+    if (parentCaption) {
+      return parentCaption.Edits.map((edit) => {
+        // Determine report status
+        const hasUserReported = edit.Reports.length;
 
-        for (let x = 0; x < result.length; x++) {
-          // Determine report status
-          const hasUserReported = await result[x].Reports.some(
-            (e) => e.UserUpi == upi
-          );
+        //find votes for all the edits
+        const userVote = edit.Votes.find((v) => v.UserUpi === upi);
+        const hasUserUpVoted = userVote ? userVote.upvoted : null;
 
-          //find votes for all the edits
-          const userVote = result[x].Votes.find((v) => v.UserUpi);
-          const hasUserUpVoted = userVote ? userVote.upvoted : null;
+        const upVotes = edit.Votes.filter((i) => i.upvoted).length;
+        const downVotes = edit.Votes.filter((i) => !i.upvoted).length;
 
-          const upVotes = await result[x].Votes.filter((i) => i.upvoted).length;
-          const downVotes = await result[x].Votes.filter((i) => !i.upvoted)
-            .length;
-
-          //return the result to the front end
-          toRet.push({
-            id: result[x].id,
-            body: result[x].body,
-            approved: result[x].approved,
-            blocked: result[x].blocked,
-            createdAt: result[x].createdAt,
-            updatedAt: result[x].updatedAt,
-            CaptionSentenceId: result[x].CaptionSentenceId,
-            UserId: result[x].UserId,
-            upvoted: hasUserUpVoted,
-            reported: hasUserReported,
-            upVotes: upVotes,
-            downVotes: downVotes,
-            votes: upVotes - downVotes,
-          });
-        }
-        return toRet;
+        //return the result to the front end
+        return {
+          id: edit.id,
+          body: edit.body,
+          CaptionSentenceId: edit.CaptionSentenceId,
+          upvoted: hasUserUpVoted,
+          reported: hasUserReported,
+          upVotes: upVotes,
+          downVotes: downVotes,
+          votes: upVotes - downVotes,
+          isAuthor: edit.UserUpi === upi, // Whether the current user is the author of this suggestion
+        };
       });
     } else {
       //return error message if code does not run as intended
@@ -325,6 +352,18 @@ export const postVotes = async (upvoted, EditId, upi) => {
 
 export const postReports = async (reported, EditId, UserUpi) => {
   try {
+    // First, if the user is reporting their own edit, just block it
+    const edit = await Edit.findOne({
+      where: { id: EditId, UserUpi: UserUpi },
+    });
+    if (edit) {
+      edit.blocked = true;
+      await edit.save();
+      return {
+        message: "self-edit removed",
+      };
+    }
+
     const result = await Report.findOne({ where: { UserUpi, EditId } });
     //if the vote exist and have the same value, we assume the user wish to undo the report
     if (result) {
@@ -336,7 +375,6 @@ export const postReports = async (reported, EditId, UserUpi) => {
       });
       return {
         message: "report removed",
-        result,
       };
     }
     //create report if it does not exist
@@ -360,7 +398,6 @@ export const postReports = async (reported, EditId, UserUpi) => {
       }
       return {
         message: "created new report",
-        data,
       };
     }
   } catch (err) {
