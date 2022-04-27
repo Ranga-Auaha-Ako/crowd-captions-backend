@@ -1,5 +1,5 @@
 resource "aws_lb" "main" {
-  name               = "${var.app_name}-alb-${var.environment}"
+  name               = "${var.app_name}-alb-${terraform.workspace == "default" ? "staging" : terraform.workspace}"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.security_group.id]
@@ -9,7 +9,7 @@ resource "aws_lb" "main" {
 }
 
 resource "aws_alb_target_group" "main" {
-  name        = "${var.app_name}-tg-${var.environment}"
+  name        = "${var.app_name}-tg-${terraform.workspace == "default" ? "staging" : terraform.workspace}"
   port        = 80
   protocol    = "HTTP"
   vpc_id      = data.aws_vpc.uoa_raa.id

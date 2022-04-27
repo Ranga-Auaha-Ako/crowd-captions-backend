@@ -1,5 +1,5 @@
 resource "aws_ecs_task_definition" "backend_task" {
-  family = "backend_${var.app_name}_family"
+  family = "backend_${var.app_name}_family_${terraform.workspace == "default" ? "staging" : terraform.workspace}"
 
   // Fargate is a type of ECS that requires awsvpc network_mode
   requires_compatibilities = ["FARGATE"]
@@ -11,11 +11,12 @@ resource "aws_ecs_task_definition" "backend_task" {
 
   // Fargate requires task definitions to have an execution role ARN to support ECR images
   execution_role_arn = aws_iam_role.ecs_role.arn
+  task_role_arn      = aws_iam_role.ecs_role.arn
 
   container_definitions = jsonencode([
     {
-      name      = "${var.app_name}_container",
-      image     = "809789462832.dkr.ecr.ap-southeast-2.amazonaws.com/${var.app_name}_repo:${var.app_version}",
+      name      = "${var.app_name}_container_${terraform.workspace == "default" ? "staging" : terraform.workspace}",
+      image     = "809789462832.dkr.ecr.ap-southeast-2.amazonaws.com/${var.app_name}_repo_${terraform.workspace == "default" ? "staging" : terraform.workspace}:${var.app_version}",
       memory    = 512,
       essential = true,
       portMappings = [
@@ -34,6 +35,7 @@ resource "aws_ecs_task_definition" "backend_task" {
       },
       environment = [
         { name = "NODE_ENV", value = "production" },
+        { name = "ENV_TARGET", value = "${terraform.workspace == "default" ? "staging" : terraform.workspace}" },
         { name = "PORT", value = "${tostring(var.server_port)}" },
         { name = "POSTGRES_DB", value = replace(var.app_name, "/[^a-zA-Z0-9]/", "") },
         { name = "POSTGRES_USER", value = "${replace(var.app_name, "/[^a-zA-Z0-9]/", "")}" },
@@ -57,11 +59,11 @@ resource "aws_ecs_task_definition" "backend_task" {
 
 
 resource "aws_ecs_cluster" "backend_cluster" {
-  name = "backend_cluster_${var.app_name}"
+  name = "backend_cluster_${var.app_name}_${terraform.workspace == "default" ? "staging" : terraform.workspace}"
 }
 
 resource "aws_ecs_service" "backend_service" {
-  name = "backend_service"
+  name = "backend_service_${var.app_name}_${terraform.workspace == "default" ? "staging" : terraform.workspace}"
 
   cluster          = aws_ecs_cluster.backend_cluster.id
   platform_version = "1.3.0"
@@ -78,7 +80,7 @@ resource "aws_ecs_service" "backend_service" {
 
   load_balancer {
     target_group_arn = aws_alb_target_group.main.arn
-    container_name   = "${var.app_name}_container"
+    container_name   = "${var.app_name}_container_${terraform.workspace == "default" ? "staging" : terraform.workspace}"
     container_port   = var.server_port
   }
 
@@ -93,5 +95,9 @@ resource "aws_ecs_service" "backend_service" {
 }
 
 resource "aws_cloudwatch_log_group" "default" {
-  name = "awslogs-${var.app_name}"
+  name = "awslogs-${var.app_name}-${terraform.workspace == "default" ? "staging" : terraform.workspace}"
+}
+
+resource "aws_cloudwatch_log_group" "audit" {
+  name = "${replace(var.app_name, "/[^a-zA-Z0-9]/", "")}-${terraform.workspace == "default" ? "staging" : terraform.workspace}"
 }

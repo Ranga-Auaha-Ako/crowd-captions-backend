@@ -1,11 +1,11 @@
 data "aws_secretsmanager_secret_version" "db" {
-  secret_id = "${var.environment}/crowdcaptions/db"
+  secret_id = "${terraform.workspace == "default" ? "staging" : terraform.workspace}/crowdcaptions/db"
 }
 data "aws_secretsmanager_secret_version" "panopto" {
-  secret_id = "${var.environment}/crowdcaptions/panopto"
+  secret_id = "${terraform.workspace == "default" ? "staging" : terraform.workspace}/crowdcaptions/panopto"
 }
 data "aws_secretsmanager_secret_version" "jwt_secret" {
-  secret_id = "${var.environment}/crowdcaptions/jwt_secret"
+  secret_id = "${terraform.workspace == "default" ? "staging" : terraform.workspace}/crowdcaptions/jwt_secret"
 }
 
 locals {

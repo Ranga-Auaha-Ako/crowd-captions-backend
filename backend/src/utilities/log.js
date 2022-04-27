@@ -19,16 +19,12 @@ winston.add(
 if (env != "development") {
   winston.add(
     new WinstonCloudWatch({
-      logGroupName: `crowdcaptions-${env}`,
+      awsRegion: "ap-southeast-2",
+      logGroupName: `crowdcaptions-${process.env.ENV_TARGET || "dev"}`,
       logStreamName: function () {
         // Spread log streams across dates as the server stays up
         let date = new Date().toISOString().split("T")[0];
-        return (
-          "express-server-" +
-          date +
-          "-" +
-          crypto.createHash("md5").update(startTime).digest("hex")
-        );
+        return "crowdcaptions-" + date;
       },
     })
   );

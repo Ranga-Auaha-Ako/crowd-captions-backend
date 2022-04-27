@@ -35,7 +35,7 @@ data "aws_vpc" "uoa_raa" {
 
 
 resource "aws_security_group" "security_group" {
-  name        = "security_group_${var.app_name}"
+  name        = "security_group_${var.app_name}_${terraform.workspace == "default" ? "staging" : terraform.workspace}"
   description = "Allow TLS inbound traffic on port 80 (http)"
   vpc_id      = data.aws_vpc.uoa_raa.id
 

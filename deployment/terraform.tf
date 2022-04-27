@@ -2,12 +2,11 @@ resource "aws_s3_bucket" "tf_state" {
   bucket = "uoa-raa-terraform-state"
 
   tags = {
-    Name        = "Terraform State for ${var.app_name}"
-    Environment = "${var.environment}"
+    Name = "Terraform State for ${var.app_name}"
   }
 }
 
-resource "aws_s3_bucket_acl" "example" {
+resource "aws_s3_bucket_acl" "state" {
   bucket = aws_s3_bucket.tf_state.id
   acl    = "private"
 }

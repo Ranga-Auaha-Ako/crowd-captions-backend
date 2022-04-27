@@ -14,16 +14,16 @@ resource "aws_db_instance" "default" {
 }
 
 resource "aws_db_subnet_group" "default" {
-  name       = "main"
+  name       = "${var.app_name}_${terraform.workspace == "default" ? "staging" : terraform.workspace}_main"
   subnet_ids = ["${data.aws_subnet.public_a.id}", "${data.aws_subnet.private_a.id}", "${data.aws_subnet.private_b.id}", "${data.aws_subnet.public_b.id}"]
 
   tags = {
-    Name = "${var.app_name} DB subnet group"
+    Name = "${var.app_name} DB subnet group - ${terraform.workspace == "default" ? "staging" : terraform.workspace}"
   }
 }
 
 resource "aws_security_group" "rds_default" {
-  name   = "security_group_${var.app_name}_rds_db"
+  name   = "security_group_${var.app_name}_${terraform.workspace == "default" ? "staging" : terraform.workspace}_rds_db"
   vpc_id = data.aws_vpc.uoa_raa.id
   egress = [
     {

@@ -4,12 +4,6 @@ variable "app_name" {
   default     = "crowd-captions"
 }
 
-variable "environment" {
-  description = "Environment (prod/staging)"
-  type        = string
-  default     = "staging"
-}
-
 variable "server_host" {
   description = "What domain name will this API end up on?"
   type        = string
@@ -30,7 +24,7 @@ variable "panopto_host" {
 variable "health_check_path" {
   description = "Path to check to see how service is doing"
   type        = string
-  default     = "/"
+  default     = "/health"
 }
 
 variable "cert_arn" {
