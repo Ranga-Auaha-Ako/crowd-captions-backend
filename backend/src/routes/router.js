@@ -29,6 +29,9 @@ router.get("/", async (req, res) => {
   res.redirect("https://docs.crowdcaptions.raa.amazon.auckland.ac.nz/");
 });
 
+router.get("/health", async (req, res) => {
+  res.send(`Health.`);
+});
 // Authentication callback route
 router.get(
   "/auth/callback",
