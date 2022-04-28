@@ -8,9 +8,8 @@ const express = require("express");
 const router = express.Router();
 var passport = require("passport");
 require("../config/passport");
-const jwt = require("jsonwebtoken");
-const env = process.env.NODE_ENV || "development";
-const config = require(__dirname + "/../config/config.js")[env];
+const { sequelize } = require("../models");
+const setToken = require("../utilities/setToken");
 
 //handle request which access to root
 router.get("/", async (req, res) => {
@@ -30,7 +29,16 @@ router.get("/", async (req, res) => {
 });
 
 router.get("/health", async (req, res) => {
-  res.send(`Health.`);
+  try {
+    await sequelize.authenticate();
+    res.json({
+      status: "success",
+      user: req.user ? "Authenticated" : "Not Authenticated",
+    });
+  } catch (err) {
+    res.status(500);
+    console.error("Unable to connect to the database:", err);
+  }
 });
 // Authentication callback route
 router.get(
@@ -51,21 +59,7 @@ router.get("/auth/jwt", async (req, res) => {
     res.status(401);
     return res.json({ status: "User not authenticated" });
   }
-  const token = jwt.sign(
-    { upi: req.user.upi, accessToken: req.user.accessToken },
-    config.jwt_secret,
-    {
-      expiresIn: "90m",
-      issuer: "crowdcaptions.raa.amazon.auckland.ac.nz",
-      audience: "api.crowdcaptions.raa.amazon.auckland.ac.nz",
-    }
-  );
-  res.cookie("jwt-auth", token, {
-    maxAge: 3600000,
-    secure: true,
-    httpOnly: true,
-    sameSite: "strict",
-  });
+  setToken(req.user, res);
   // return res.json({ token });
   return res.send("<script>window.close();</script > ");
 });

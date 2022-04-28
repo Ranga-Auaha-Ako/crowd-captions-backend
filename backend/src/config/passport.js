@@ -1,5 +1,7 @@
 const passport = require("passport");
 const OAuth2Strategy = require("passport-oauth2").Strategy;
+const refresh = require("passport-oauth2-refresh");
+
 // var OpenIdOAuth2Strategy = require("passport-openid-oauth20").Strategy;
 //import all database as constants
 const {
@@ -30,7 +32,7 @@ let PanoptoStrategy = new OAuth2Strategy(
     clientSecret: process.env.panopto_clientSecret,
     callbackURL: "/auth/callback",
     proxy: true,
-    scope: ["api", "openid", "profile", "email"],
+    scope: ["api", "openid", "profile", "email", "offline_access"],
   },
   async function (accessToken, refreshToken, profile, done) {
     // First attempt to find user
@@ -58,7 +60,7 @@ let PanoptoStrategy = new OAuth2Strategy(
       // User exists, get it.
       user = user.get({ plain: true });
     }
-    return done(null, { ...user, accessToken });
+    return done(null, { ...user, accessToken, refreshToken });
   }
 );
 
@@ -135,18 +137,20 @@ PanoptoStrategy.userProfile = function (accessToken, done) {
 };
 
 passport.use(PanoptoStrategy);
+refresh.use(PanoptoStrategy);
 
 passport.serializeUser(function (user, done) {
-  done(null, `${user.upi}::${user.accessToken}`);
+  done(null, `${user.upi}::${user.accessToken}::${user.refreshToken}`);
 });
 
 passport.deserializeUser(async function (serial, done) {
-  const [upi, accessToken] = serial.split("::");
+  const [upi, accessToken, refreshToken] = serial.split("::");
   const u = await User.findByPk(upi);
   if (!u) {
     return done("Please log in again", false);
   }
-  done(null, { ...u.get({ plain: true }), accessToken });
+  console.log("refreshToken", refreshToken);
+  done(null, { ...u.get({ plain: true }), accessToken, refreshToken });
 });
 
 // JWT for API
@@ -169,6 +173,7 @@ const ApiStrategy = new JwtStrategy(
     done(null, {
       ...u.get({ plain: true }),
       accessToken: jwt_payload.accessToken,
+      refreshToken: jwt_payload.refreshToken,
     });
   }
 );

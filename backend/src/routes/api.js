@@ -1,7 +1,5 @@
 const express = require("express");
 const router = express.Router();
-var passport = require("passport");
-require("../config/passport");
 
 // Import models as database relations
 const {
@@ -49,11 +47,9 @@ function isAuthenticated(req, res, next) {
 router.get("/captions/:lectureId/", isAuthenticated, async (req, res) => {
   let { lectureId } = req.params;
 
-  await getCaptions(lectureId, req.user.upi, req.user.accessToken).then(
-    (result) => {
-      return res.json(result);
-    }
-  );
+  await getCaptions(lectureId, req.user.upi, req, res).then((result) => {
+    return res.json(result);
+  });
 });
 
 //query the edits of one sentence

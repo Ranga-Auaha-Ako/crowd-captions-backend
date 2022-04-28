@@ -6,11 +6,13 @@ and links each server components together
 import "dotenv/config";
 import express from "express";
 import session from "express-session";
+const { sequelize } = require("./models");
 var cookieSession = require("cookie-session");
 var passport = require("passport");
 require("./config/passport");
 const env = process.env.NODE_ENV || "development";
 const config = require("./config/config.js")[env];
+const sessionStore = require("./utilities/sequelizeStore");
 
 // Initialise Winston for logging
 const auditLogger = require("./utilities/log");
@@ -22,15 +24,22 @@ const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+sessionStore.sync();
+
 app.use(
-  cookieSession({
-    name: "session",
-    keys: [config.jwt_secret],
-    sameSite: "strict",
-    // secure: env !== "development",
-    signed: true,
-    overwrite: true,
-    httpOnly: true,
+  session({
+    secret: config.jwt_secret,
+    store: sessionStore,
+    resave: false, // we support the touch method so per the express-session docs this should be set to false
+    proxy: true, // if you do SSL outside of node.
+    saveUninitialized: false, // don't create new sessions for unauthenticated users
+    // name: "session",
+    // keys: [config.jwt_secret],
+    // sameSite: "strict",
+    // // secure: env !== "development",
+    // signed: true,
+    // overwrite: true,
+    // httpOnly: true,
   })
 );
 app.use(passport.initialize());

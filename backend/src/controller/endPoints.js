@@ -2,7 +2,10 @@ const { Op } = require("sequelize");
 const qs = require("qs");
 const axios = require("axios");
 const { default: srtParser2 } = require("srt-parser-2");
+const refresh = require("passport-oauth2-refresh");
+const { promisify } = require("util");
 import { QueryTypes } from "sequelize";
+const setToken = require("../utilities/setToken");
 
 // Import helper
 const { getTimeFromStart } = require("../helper/getTimeFromStart.js");
@@ -19,30 +22,67 @@ const {
   courseOwnerships,
 } = require("../models");
 
-export const getCaptions = async (lectureId, upi, accessToken) => {
+export const getCaptions = async (
+  lectureId,
+  upi,
+  { user, logIn },
+  res,
+  retry = false
+) => {
   try {
+    // Confirm user is able to view this lecture. Break if not. Fetch folder
+    const lectureInfo = await axios.get(
+      `https://${process.env.panopto_host}/Panopto/api/v1/sessions/${lectureId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${user.accessToken}`,
+        },
+      }
+    );
+    if (
+      lectureInfo.status != "200" ||
+      !lectureInfo.data ||
+      !lectureInfo.data.Urls ||
+      !lectureInfo.data.Urls.CaptionDownloadUrl
+    ) {
+      // First, check if we just need to refresh access token. Only try to refresh once
+      if (lectureInfo.status === "401" && !retry) {
+        try {
+          const [newAccessToken, newRefreshToken] = await promisify(
+            (strategy, token, cb) =>
+              refresh.requestNewAccessToken(
+                strategy,
+                token,
+                (err, ...results) => cb(err, results)
+              )
+          )("oauth2", user.refreshToken);
+          // We have a new access token!
+          // Update user access token
+          const newUser = {
+            ...user,
+            accessToken: newAccessToken,
+            refreshToken: newRefreshToken,
+          };
+          setToken(newUser, res);
+          return await getCaptions(
+            lectureId,
+            upi,
+            { user: newUser, logIn },
+            res,
+            true
+          );
+        } catch (err) {
+          console.error(err);
+          return { error: "Token refresh failed" };
+        }
+      }
+      console.log("Warning! Captions not found");
+      return { error: "Captions not found" };
+    }
     let result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
     });
     if (!result) {
-      // Confirm user is able to view this lecture. Break if not. Fetch folder
-      const lectureInfo = await axios.get(
-        `https://${process.env.panopto_host}/Panopto/api/v1/sessions/${lectureId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-          },
-        }
-      );
-      if (
-        lectureInfo.status != "200" ||
-        !lectureInfo.data ||
-        !lectureInfo.data.Urls ||
-        !lectureInfo.data.Urls.CaptionDownloadUrl
-      ) {
-        console.log("Warning! Captions not found");
-        return { error: "Captions not found" };
-      }
       console.log(
         `New caption data URL found: ${lectureInfo.data.Urls.CaptionDownloadUrl} in folder ${lectureInfo.data.FolderDetails.Id}`
       );
@@ -62,7 +102,7 @@ export const getCaptions = async (lectureId, upi, accessToken) => {
         `https://${process.env.panopto_host}/Panopto/api/v1/auth/legacyLogin`,
         {
           headers: {
-            Authorization: `Bearer ${accessToken}`,
+            Authorization: `Bearer ${user.accessToken}`,
           },
         }
       );
