@@ -17,7 +17,7 @@ const setToken = (user, res) => {
     }
   );
   res.cookie("jwt-auth", token, {
-    maxAge: 86400,
+    // maxAge: 86400,
     secure: true,
     httpOnly: true,
     sameSite: "strict",
