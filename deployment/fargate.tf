@@ -8,6 +8,11 @@ resource "aws_ecs_task_definition" "backend_task" {
   // Valid sizes are shown here: https://aws.amazon.com/fargate/pricing/
   memory = "512"
   cpu    = "256"
+  # https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecs_task_definition#:~:text=runtime_platform%20%7B%0A%20%20%20%20operating_system_family%20%3D%20%22WINDOWS_SERVER_2019_CORE%22%0A%20%20%20%20cpu_architecture%20%20%20%20%20%20%20%20%3D%20%22X86_64%22%0A%20%20%7D
+  runtime_platform {
+    operating_system_family = "LINUX"
+    cpu_architecture        = "ARM64"
+  }
 
   // Fargate requires task definitions to have an execution role ARN to support ECR images
   execution_role_arn = aws_iam_role.ecs_role.arn
@@ -16,7 +21,7 @@ resource "aws_ecs_task_definition" "backend_task" {
   container_definitions = jsonencode([
     {
       name      = "${var.app_name}_container_${terraform.workspace == "default" ? "staging" : terraform.workspace}",
-      image     = "809789462832.dkr.ecr.ap-southeast-2.amazonaws.com/${var.app_name}_repo_${terraform.workspace == "default" ? "staging" : terraform.workspace}:${var.app_version}",
+      image     = "${aws_ecr_repository.ecr_repo.repository_url}:${var.app_version}",
       memory    = 512,
       essential = true,
       portMappings = [
@@ -66,7 +71,7 @@ resource "aws_ecs_service" "backend_service" {
   name = "backend_service_${var.app_name}_${terraform.workspace == "default" ? "staging" : terraform.workspace}"
 
   cluster          = aws_ecs_cluster.backend_cluster.id
-  platform_version = "1.3.0"
+  platform_version = "1.4.0"
   task_definition  = aws_ecs_task_definition.backend_task.arn
 
   launch_type   = "FARGATE"

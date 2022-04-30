@@ -11,4 +11,4 @@ RUN npm ci
 # copy in our source code last, as it changes the most
 COPY . /code
 
-CMD [ "npm", "run", "dev" ]
+CMD [ "node", "src/index.js" ]

@@ -4,6 +4,12 @@ variable "app_name" {
   default     = "crowd-captions"
 }
 
+variable "aws_region" {
+  description = "What AWS region to build to?"
+  type        = string
+  default     = "ap-southeast-2"
+}
+
 variable "server_host" {
   description = "What domain name will this API end up on?"
   type        = string
@@ -36,4 +42,8 @@ variable "app_version" {
   description = "Version of the tool to deploy"
   type        = string
   default     = "latest"
+}
+
+output "version" {
+  value = var.app_version
 }
