@@ -149,7 +149,7 @@ const admin = new AdminJS({
 let router = express.Router();
 
 router.use((req, res, next) => {
-  if (req.isAuthenticated() && req.user.access > 0) {
+  if (req.isAuthenticated() && req.user.access === 2) {
     req.session.adminUser = req.user;
     next();
   } else {

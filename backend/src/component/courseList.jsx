@@ -3,8 +3,8 @@ import { Box } from "@adminjs/design-system";
 import { useState, useEffect } from "react";
 const api = new ApiClient();
 
-const courses = [1,2,3]
-console.log("hello world");
+const courses = [1, 2, 3];
+// console.log("hello world");
 
 const courseList = () => {
   const [data, setData] = useState({});
@@ -19,9 +19,9 @@ const courseList = () => {
     <Box variant="grey">
       <Box variant="white">
         <div>
-            {courses.map((num) => (
-                <h3 key={num}>{num}</h3>
-            ))}
+          {courses.map((num) => (
+            <h3 key={num}>{num}</h3>
+          ))}
         </div>
       </Box>
     </Box>

@@ -17,11 +17,10 @@ const env = process.env.NODE_ENV || "development";
 const config = require(__dirname + "/../config/config.js")[env];
 
 const SUPERADMIN_IDS = [
-  "a47fa57c-d8ef-4433-8b9b-adaa00556393",
+  "1ff591b4-eaa2-44ec-aa64-ad700176aad8",
   "fd68c42d-6c99-4673-922e-ad9b0041c4b9",
-  "1c3cc1b3-575b-4dd9-980b-adb800112247",
 ];
-const COURSEADMIN_IDS = ["a47fa57c-d8ef-4433-8b9b-adaa00556393"];
+const COURSEADMIN_IDS = [];
 const BANNED_IDS = [];
 
 let PanoptoStrategy = new OAuth2Strategy(
@@ -149,7 +148,7 @@ passport.deserializeUser(async function (serial, done) {
   if (!u) {
     return done("Please log in again", false);
   }
-  console.log("refreshToken", refreshToken);
+  // console.log("refreshToken", refreshToken);
   done(null, { ...u.get({ plain: true }), accessToken, refreshToken });
 });
 
@@ -165,7 +164,7 @@ const ApiStrategy = new JwtStrategy(
     audience: "api.crowdcaptions.raa.amazon.auckland.ac.nz",
   },
   async (jwt_payload, done) => {
-    console.log(jwt_payload.upi);
+    // console.log(jwt_payload.upi);
     const u = await User.findByPk(jwt_payload.upi);
     if (!u) {
       return done("Please log in again", false);

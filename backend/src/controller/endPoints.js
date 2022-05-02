@@ -120,7 +120,7 @@ export const getCaptions = async (
           `${lectureInfo.data.Urls.CaptionDownloadUrl}${langString}`,
           {
             headers: {
-              Authorization: `Bearer ${accessToken}`,
+              Authorization: `Bearer ${user.accessToken}`,
               cookie: `${aspxAuthCookie} ${csrfCookie}`,
             },
           }
