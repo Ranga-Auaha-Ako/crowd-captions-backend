@@ -1,4 +1,5 @@
 #!/bin/sh
+terraform refresh
 ecr_name=$(terraform output --raw ecr_name)
 region=$(terraform output --raw region)
 account_id=$(terraform output --raw account_id)
@@ -9,3 +10,4 @@ aws ecr get-login-password --region $region | docker login --username AWS --pass
 docker build -t $ecr_name ../backend/ --platform linux/arm64
 docker tag $ecr_name:latest $account_id.dkr.ecr.$region.amazonaws.com/$ecr_name:$version
 docker push $account_id.dkr.ecr.$region.amazonaws.com/$ecr_name:$version
+terraform apply
