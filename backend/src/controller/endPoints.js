@@ -5,6 +5,7 @@ const { default: srtParser2 } = require("srt-parser-2");
 const refresh = require("passport-oauth2-refresh");
 const { promisify } = require("util");
 import { QueryTypes } from "sequelize";
+const jwt = require("jsonwebtoken");
 const setToken = require("../utilities/setToken");
 
 // Import helper
@@ -22,6 +23,42 @@ const {
   courseOwnerships,
 } = require("../models");
 
+export const getUser = async (req, res) => {
+  // First see if we need to refresh the token
+  const tokenData = jwt.decode(req.user.accessToken);
+  if (
+    (req.user.refresh_token &&
+      tokenData &&
+      tokenData.exp < Date.now() / 1000) ||
+    true
+  ) {
+    // We need to refresh the Panopto token!
+    try {
+      const [newAccessToken, newRefreshToken] = await promisify(
+        (strategy, token, cb) =>
+          refresh.requestNewAccessToken(strategy, token, (err, ...results) =>
+            cb(err, results)
+          )
+      )("oauth2", req.user.refreshToken);
+      // We have a new access token!
+      // Update user access token
+      const newUser = {
+        ...req.user,
+        accessToken: newAccessToken,
+        refreshToken: newRefreshToken,
+      };
+      const newJWT = setToken(newUser, res);
+      return { ...newUser, updated: true, newJWT };
+    } catch (err) {
+      console.error(err);
+      res.status(401);
+      return { error: "Token refresh failed" };
+    }
+  } else {
+    return req.user;
+  }
+};
+
 export const getCaptions = async (
   lectureId,
   upi,
@@ -31,52 +68,34 @@ export const getCaptions = async (
 ) => {
   try {
     // Confirm user is able to view this lecture. Break if not. Fetch folder
-    const lectureInfo = await axios.get(
-      `https://${process.env.panopto_host}/Panopto/api/v1/sessions/${lectureId}`,
-      {
-        headers: {
-          Authorization: `Bearer ${user.accessToken}`,
-        },
-      }
-    );
+    const lectureInfo = await axios
+      .get(
+        `https://${process.env.panopto_host}/Panopto/api/v1/sessions/${lectureId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${user.accessToken}`,
+          },
+          validateStatus(status) {
+            return status < 500; // Resolve only if the status code is less than 500
+          },
+        }
+      )
+      .catch((error) => {
+        console.log(
+          `Error (${error.response.status}) fetching lecture ${lectureId} info: ${error.response.data}`
+        );
+      });
     if (
-      lectureInfo.status != "200" ||
+      lectureInfo.status != 200 ||
       !lectureInfo.data ||
       !lectureInfo.data.Urls ||
       !lectureInfo.data.Urls.CaptionDownloadUrl
     ) {
-      // First, check if we just need to refresh access token. Only try to refresh once
-      if (lectureInfo.status === "401" && !retry) {
-        try {
-          const [newAccessToken, newRefreshToken] = await promisify(
-            (strategy, token, cb) =>
-              refresh.requestNewAccessToken(
-                strategy,
-                token,
-                (err, ...results) => cb(err, results)
-              )
-          )("oauth2", user.refreshToken);
-          // We have a new access token!
-          // Update user access token
-          const newUser = {
-            ...user,
-            accessToken: newAccessToken,
-            refreshToken: newRefreshToken,
-          };
-          setToken(newUser, res);
-          return await getCaptions(
-            lectureId,
-            upi,
-            { user: newUser, logIn },
-            res,
-            true
-          );
-        } catch (err) {
-          console.error(err);
-          return { error: "Token refresh failed" };
-        }
-      }
-      console.log("Warning! Captions not found");
+      console.log(
+        `User failed to load captions on video ${lectureId}. Response: ${
+          lectureInfo.status
+        } | ${JSON.stringify(lectureInfo.data)}`
+      );
       return { error: "Captions not found" };
     }
     let result = await CaptionFile.findOne({
@@ -160,14 +179,9 @@ export const getCaptions = async (
         include: [
           {
             model: Vote,
-            attributes: [
-              "upvoted",
-              [sequelize.fn("count", sequelize.col("Votes.id")), "votes"],
-            ],
+            attributes: ["upvoted"],
           },
         ],
-        group: ["Edit.id", "Edit.body", "Votes.id", "Votes.upvoted"],
-        separate: true,
       },
     });
     const captions = caption.map((sentence) => {
@@ -176,15 +190,9 @@ export const getCaptions = async (
             const upVoteObject = edit.Votes.find(
               (vote) => vote.upvoted === true
             );
-            const upVotes = upVoteObject
-              ? parseInt(upVoteObject.dataValues.votes, 10)
-              : 0;
-            const downVoteObject = edit.Votes.find(
-              (vote) => vote.upvoted === false
-            );
-            const downVotes = downVoteObject
-              ? parseInt(downVoteObject.dataValues.votes, 10)
-              : 0;
+            //find votes for all the edits
+            const upVotes = edit.Votes.filter((i) => i.upvoted).length;
+            const downVotes = edit.Votes.filter((i) => !i.upvoted).length;
             const voteScore = upVotes - downVotes;
 
             return max.voteScore > voteScore
@@ -237,6 +245,7 @@ export const getEdits = async (sentenceId, upi) => {
             },
             {
               model: Vote,
+              attributes: ["upvoted", "UserUpi"],
             },
           ],
           where: {
@@ -568,7 +577,7 @@ export const getReports = async (userId) => {
         user.access === 2
           ? undefined
           : {
-              "Edit.CaptionSentence.CaptionFile.lecture_folder": {
+              "$Edit.CaptionSentence.CaptionFile.lecture_folder$": {
                 [Op.in]: ownedFolders,
               },
             },
@@ -588,33 +597,13 @@ export const getReports = async (userId) => {
             { model: User },
             {
               model: Vote,
-              attributes: [
-                "upvoted",
-
-                [sequelize.fn("count", sequelize.col("*")), "votes"],
-              ],
+              attributes: ["upvoted", "UserUpi"],
             },
           ],
         },
         { model: User, attributes: ["username", "email", "name"] },
       ],
       attributes: ["id", "createdAt"],
-      group: [
-        "Report.id",
-        "Edit.id",
-        "Edit.body",
-        "Edit.approved",
-        "Edit.blocked",
-        "Edit.CaptionSentence.id",
-        "Edit.CaptionSentence.CaptionFile.lecture_id",
-        "Edit.CaptionSentence.CaptionFile.lecture_name",
-        "Edit.User.access",
-        "Edit.User.email",
-        "Edit.User.upi",
-        "Edit.Votes.id",
-        "User.upi",
-        "Edit.Votes.upvoted",
-      ],
     });
   } catch (err) {
     console.log(err);

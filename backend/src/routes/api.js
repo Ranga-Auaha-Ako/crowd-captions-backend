@@ -34,6 +34,7 @@ const {
   approvals,
   blocks,
   getReports,
+  getUser,
 } = require("../controller/endPoints");
 
 // Middleware to ensure authentication
@@ -152,7 +153,7 @@ router.get("/getReport", async (req, res) => {
 });
 
 router.get("/status", async (req, res) => {
-  return res.json(req.user);
+  return res.json(await getUser(req, res));
 });
 
 module.exports = router;

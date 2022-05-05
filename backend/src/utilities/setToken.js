@@ -22,5 +22,6 @@ const setToken = (user, res) => {
     httpOnly: true,
     sameSite: "strict",
   });
+  return token;
 };
 module.exports = setToken;
