@@ -8,6 +8,9 @@ import { QueryTypes } from "sequelize";
 const jwt = require("jsonwebtoken");
 const setToken = require("../utilities/setToken");
 
+// Require Winston for logging
+const auditLogger = require("../utilities/log");
+
 // Import helper
 const { getTimeFromStart } = require("../helper/getTimeFromStart.js");
 
@@ -48,6 +51,11 @@ export const getUser = async (req, res) => {
         refreshToken: newRefreshToken,
       };
       const newJWT = setToken(newUser, res);
+      auditLogger.info({
+        action: "getUser",
+        user: newUser.upi,
+        result: "User refreshed token",
+      });
       return { ...newUser, updated: true, newJWT };
     } catch (err) {
       console.error(err);
@@ -55,6 +63,7 @@ export const getUser = async (req, res) => {
       return { error: "Token refresh failed" };
     }
   } else {
+    auditLogger.info({ action: "getUser", user: req.user.upi });
     return req.user;
   }
 };
@@ -112,6 +121,12 @@ export const getCaptions = async (
         },
       });
       if (!courseOwnership) {
+        auditLogger.info({
+          action: "getCaptions",
+          user: upi,
+          lectureId,
+          result: "No Onwer",
+        });
         return { error: "Video has no CrowdCaptions owner" };
       }
       // console.log(lectureInfo);
@@ -182,14 +197,12 @@ export const getCaptions = async (
             attributes: ["upvoted"],
           },
         ],
+        separate: true,
       },
     });
     const captions = caption.map((sentence) => {
       const bestEdit = sentence.Edits.length
         ? sentence.Edits.reduce((max, edit) => {
-            const upVoteObject = edit.Votes.find(
-              (vote) => vote.upvoted === true
-            );
             //find votes for all the edits
             const upVotes = edit.Votes.filter((i) => i.upvoted).length;
             const downVotes = edit.Votes.filter((i) => !i.upvoted).length;
@@ -212,6 +225,12 @@ export const getCaptions = async (
           votes: bestEdit.voteScore,
         },
       };
+    });
+    auditLogger.info({
+      action: "getCaptions",
+      user: upi,
+      lectureId,
+      result: "Success",
     });
     return {
       Caption_file: captions,
@@ -257,6 +276,12 @@ export const getEdits = async (sentenceId, upi) => {
     });
     //check if the parent sentence exist
     if (parentCaption) {
+      auditLogger.info({
+        action: "getEdits",
+        user: upi,
+        sentenceId,
+        result: "Success",
+      });
       return parentCaption.Edits.map((edit) => {
         // Determine report status
         const hasUserReported = edit.Reports.length;
@@ -283,6 +308,12 @@ export const getEdits = async (sentenceId, upi) => {
       });
     } else {
       //return error message if code does not run as intended
+      auditLogger.info({
+        action: "getEdits",
+        user: upi,
+        sentenceId,
+        result: "NotFound",
+      });
       return "Caption sentence not found";
     }
   } catch (err) {
@@ -290,12 +321,18 @@ export const getEdits = async (sentenceId, upi) => {
   }
 };
 
-export const getUnapprovedEdits = async (lectureId) => {
+export const getUnapprovedEdits = async (lectureId, upi) => {
   try {
     const result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
     });
     if (result) {
+      auditLogger.info({
+        action: "getUnapprovedEdits",
+        user: upi,
+        lectureId,
+        result: "Success",
+      });
       return await CaptionSentence.findAll({
         where: { CaptionFileLectureId: lectureId },
       }).then(async (sentences) => {
@@ -313,6 +350,12 @@ export const getUnapprovedEdits = async (lectureId) => {
         return toRet;
       });
     } else {
+      auditLogger.info({
+        action: "getUnapprovedEdits",
+        user: upi,
+        lectureId,
+        result: "NotFound",
+      });
       return "caption file not found";
     }
   } catch (err) {
@@ -346,10 +389,24 @@ export const postEdits = async (sentenceId, body, upi) => {
         EditId: d["dataValues"]["id"],
         UserUpi: upi,
       });
+      auditLogger.info({
+        action: "postEdits",
+        user: upi,
+        sentenceId,
+        EditId: d["dataValues"]["id"],
+        EditContents: body,
+        result: "Success",
+      });
     });
     return data;
   } catch (err) {
     console.log(err);
+    auditLogger.info({
+      action: "postEdits",
+      user: upi,
+      sentenceId,
+      result: "NotFound",
+    });
     return "Caption Sentence does not exist";
   }
 };
@@ -363,6 +420,13 @@ export const postVotes = async (upvoted, EditId, upi) => {
       //if the vote exist and have the same value, we can just remove it
       if (result["dataValues"]["upvoted"] == (upvoted === "true")) {
         Vote.destroy({ where: { EditId, UserUpi: upi } });
+        auditLogger.info({
+          action: "postVotes",
+          user: upi,
+          EditId,
+          Vote: 0,
+          result: "Removed",
+        });
         return "vote removed";
         //else we update the current vote
       } else {
@@ -371,6 +435,13 @@ export const postVotes = async (upvoted, EditId, upi) => {
             EditId,
             UserUpi: upi,
           },
+        });
+        auditLogger.info({
+          action: "postVotes",
+          user: upi,
+          EditId,
+          Vote: upvoted ? 1 : -1,
+          result: "Changed",
         });
         return {
           message: "vote changed",
@@ -390,11 +461,24 @@ export const postVotes = async (upvoted, EditId, upi) => {
       UserUpi: upi,
     });
     await data.save();
+    auditLogger.info({
+      action: "postVotes",
+      user: upi,
+      EditId,
+      Vote: upvoted ? 1 : -1,
+      result: "Created",
+    });
     return {
       message: "vote created",
       data,
     };
   } catch (err) {
+    auditLogger.info({
+      action: "postVotes",
+      user: upi,
+      EditId,
+      result: `Error: ${err}`,
+    });
     return "Upi is too long or Edit does not exist";
   }
 };
@@ -408,6 +492,12 @@ export const postReports = async (reported, EditId, UserUpi) => {
     if (edit) {
       edit.blocked = true;
       await edit.save();
+      auditLogger.info({
+        action: "postReports",
+        user: UserUpi,
+        EditId,
+        result: "Deleted",
+      });
       return {
         message: "self-edit removed",
       };
@@ -421,6 +511,12 @@ export const postReports = async (reported, EditId, UserUpi) => {
           UserUpi,
           EditId,
         },
+      });
+      auditLogger.info({
+        action: "postReports",
+        user: UserUpi,
+        EditId,
+        result: "Removed",
       });
       return {
         message: "report removed",
@@ -445,6 +541,12 @@ export const postReports = async (reported, EditId, UserUpi) => {
           UserUpi,
         });
       }
+      auditLogger.info({
+        action: "postReports",
+        user: UserUpi,
+        EditId,
+        result: "Created",
+      });
       return {
         message: "created new report",
       };
@@ -469,6 +571,12 @@ export const approvals = async (approved, id, UserUpi) => {
         },
       });
       if (!courseOwnership) {
+        auditLogger.info({
+          action: "postApprovals",
+          user: UserUpi,
+          EditId,
+          result: "NoPermissions",
+        });
         return { error: "User does not own the folder" };
       }
       // Update edit to be approved/unapproved
@@ -480,6 +588,12 @@ export const approvals = async (approved, id, UserUpi) => {
           },
         }
       );
+      auditLogger.info({
+        action: "postApprovals",
+        user: UserUpi,
+        EditId,
+        result: "Success",
+      });
       return {
         message: "edit approvment state changed",
         change,
@@ -505,6 +619,12 @@ export const blocks = async (blocked, id, UserUpi) => {
         },
       });
       if (!courseOwnership) {
+        auditLogger.info({
+          action: "postBlock",
+          user: UserUpi,
+          EditId: id,
+          result: "NoPermissions",
+        });
         return { error: "User does not own the folder" };
       }
       // Update edit to be blocked/unblocked
@@ -516,6 +636,12 @@ export const blocks = async (blocked, id, UserUpi) => {
           },
         }
       );
+      auditLogger.info({
+        action: "postBlock",
+        user: UserUpi,
+        EditId: id,
+        result: "Success",
+      });
       return {
         message: "edit block state changed",
         change,
@@ -538,6 +664,7 @@ export const getOwned = async (upi) => {
       (course) => course.lecture_folder
     );
     if (!ownedFolders) {
+      auditLogger.info({ action: "getOwned", user: upi, result: "NoneFound" });
       return [];
     }
     const ownedCourses = await CaptionFile.findAll({
@@ -547,6 +674,7 @@ export const getOwned = async (upi) => {
         },
       },
     });
+    auditLogger.info({ action: "getOwned", user: upi, result: "Success" });
     return {
       folders: user.courseOwnerships.map((folder) => ({
         name: folder.folder_name,
@@ -571,6 +699,7 @@ export const getReports = async (userId) => {
       (course) => course.lecture_folder
     );
     // Get reports, filtered by only the courses the user owns
+    auditLogger.info({ action: "getReports", user: userId, result: "Success" });
     return await Report.findAll({
       // Show all course reports if superuser
       where:
@@ -606,6 +735,7 @@ export const getReports = async (userId) => {
       attributes: ["id", "createdAt"],
     });
   } catch (err) {
+    auditLogger.info({ action: "getReports", user: upi, result: "Error" });
     console.log(err);
   }
 };
