@@ -75,7 +75,7 @@ resource "aws_ecs_service" "backend_service" {
   task_definition  = aws_ecs_task_definition.backend_task.arn
 
   launch_type   = "FARGATE"
-  desired_count = 1
+  desired_count = 3
 
   network_configuration {
     subnets          = ["${data.aws_subnet.public_a.id}"]
@@ -90,7 +90,7 @@ resource "aws_ecs_service" "backend_service" {
   }
 
   lifecycle {
-    ignore_changes = [desired_count]
+    # ignore_changes = [desired_count]
   }
   depends_on = [
     aws_alb_target_group.main,

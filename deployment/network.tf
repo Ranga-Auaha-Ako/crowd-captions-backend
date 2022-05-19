@@ -1,26 +1,34 @@
+resource "random_id" "vpc_id" {
+  keepers = {
+    # Generate a new id each time we switch to a new VPC
+    vpc_id = "${data.aws_vpc.uoa_raa.id}"
+  }
+  byte_length = 4
+}
+
 data "aws_subnet" "public_a" {
-  id = "subnet-03e025981851ceeda"
+  id = "subnet-06c65863acf3349c5"
 }
 
 data "aws_subnet" "public_b" {
-  id = "subnet-0fbf5aef197de0f6c"
+  id = "subnet-032fd3b5134089b35"
 }
 
 data "aws_subnet" "private_a" {
-  id = "subnet-0b4713e4bd00527e5"
+  id = "subnet-0fed70da793671949"
 }
 
 
 data "aws_subnet" "private_b" {
-  id = "subnet-09cb2acdeec782ab8"
+  id = "subnet-028ed93ca67efe5df"
 }
 
-data "aws_security_group" "caprover" {
-  id = "sg-047d956d55bac88d4"
-}
+# data "aws_security_group" "caprover" {
+#   id = "sg-047d956d55bac88d4"
+# }
 
 data "aws_vpc" "uoa_raa" {
-  id = data.aws_subnet.public_a.vpc_id
+  id = "vpc-04a3b19a64f18c9e0"
 }
 
 # resource "aws_internet_gateway" "internet_gateway" {
@@ -35,7 +43,7 @@ data "aws_vpc" "uoa_raa" {
 
 
 resource "aws_security_group" "security_group" {
-  name        = "security_group_${var.app_name}_${terraform.workspace == "default" ? "staging" : terraform.workspace}"
+  name        = "security_group_${var.app_name}_${terraform.workspace == "default" ? "staging" : terraform.workspace}-${random_id.vpc_id.hex}"
   description = "Allow TLS inbound traffic on port 80 (http)"
   vpc_id      = data.aws_vpc.uoa_raa.id
 

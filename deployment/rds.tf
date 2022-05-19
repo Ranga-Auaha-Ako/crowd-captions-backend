@@ -11,6 +11,11 @@ resource "aws_db_instance" "default" {
   vpc_security_group_ids = ["${aws_security_group.rds_default.id}"]
   publicly_accessible    = false
   skip_final_snapshot    = true
+
+  depends_on = [
+    aws_db_subnet_group.default,
+    aws_security_group.rds_default
+  ]
 }
 
 resource "aws_db_subnet_group" "default" {
@@ -50,15 +55,18 @@ resource "aws_security_group" "rds_default" {
       prefix_list_ids  = []
       protocol         = "tcp"
       security_groups = [
-        data.aws_security_group.caprover.id,
         aws_security_group.security_group.id,
       ]
       self = true
     },
   ]
 
-  lifecycle {
-    create_before_destroy = true
-  }
+  # lifecycle {
+  #   create_before_destroy = true
+  # }
+
+  depends_on = [
+    aws_security_group.security_group
+  ]
 }
 

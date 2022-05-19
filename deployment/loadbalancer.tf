@@ -1,5 +1,5 @@
 resource "aws_lb" "main" {
-  name               = "${var.app_name}-alb-${terraform.workspace == "default" ? "staging" : terraform.workspace}"
+  name               = "${var.app_name}-alb-${terraform.workspace == "default" ? "stg" : terraform.workspace}-${random_id.vpc_id.hex}"
   internal           = false
   load_balancer_type = "application"
   security_groups    = [aws_security_group.security_group.id]
@@ -9,10 +9,10 @@ resource "aws_lb" "main" {
 }
 
 resource "aws_alb_target_group" "main" {
-  name        = "${var.app_name}-tg-${terraform.workspace == "default" ? "staging" : terraform.workspace}"
+  name        = "${var.app_name}-tg-${terraform.workspace == "default" ? "stg" : terraform.workspace}-${random_id.vpc_id.hex}"
   port        = 80
   protocol    = "HTTP"
-  vpc_id      = data.aws_vpc.uoa_raa.id
+  vpc_id      = random_id.vpc_id.keepers.vpc_id
   target_type = "ip"
 
   health_check {
@@ -24,6 +24,11 @@ resource "aws_alb_target_group" "main" {
     path                = var.health_check_path
     unhealthy_threshold = "2"
   }
+
+  lifecycle {
+    create_before_destroy = true
+  }
+
 }
 
 resource "aws_alb_listener" "http" {

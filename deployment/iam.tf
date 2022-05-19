@@ -50,6 +50,9 @@ resource "aws_iam_role_policy_attachment" "ecs_policy_attachment" {
   for_each = toset([
     // This policy adds logging + ecr permissions
     "arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy",
+    # "arn:aws:iam::aws:policy/service-role/GetSecretValue",
+    # "arn:aws:iam::aws:policy/service-role/GetSSMParamters",
+    # "arn:aws:iam::aws:policy/service-role/CloudWatchFullAccess",
     aws_iam_policy.fargateTask.arn
   ])
   policy_arn = each.value
