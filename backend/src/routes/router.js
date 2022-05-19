@@ -61,7 +61,15 @@ router.get("/auth/jwt", async (req, res) => {
   }
   setToken(req.user, res);
   // return res.json({ token });
-  return res.send("<script>window.close();</script > ");
+  return res.send(
+    `<!DOCTYPE html><html><head>
+      <title>Login successful</title>
+    </head><body>
+      <p>Login successful, you may now close this window.</p>
+      <script type="text/javascript">setTimeout("window.close();", 500);</script>
+    </body>
+    </html>`
+  );
 });
 
 router.get("/logout", async (req, res) => {
