@@ -29,14 +29,13 @@ const {
 export const getUser = async (req, res) => {
   // First see if we need to refresh the token
   const tokenData = jwt.decode(req.user.accessToken);
-  if (
-    (req.user.refresh_token &&
-      tokenData &&
-      tokenData.exp < Date.now() / 1000) ||
-    true
-  ) {
+  if (req.user.refreshToken && tokenData && tokenData.exp < Date.now() / 1000) {
     // We need to refresh the Panopto token!
     try {
+      // Don't check while wrongly configured extension is in production
+      // if (!req.query.supportRefresh === "true") {
+      //   throw new Error("Refresh token not supported");
+      // }
       const [newAccessToken, newRefreshToken] = await promisify(
         (strategy, token, cb) =>
           refresh.requestNewAccessToken(strategy, token, (err, ...results) =>
