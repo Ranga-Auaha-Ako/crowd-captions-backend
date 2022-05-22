@@ -75,7 +75,7 @@ resource "aws_ecs_service" "backend_service" {
   task_definition  = aws_ecs_task_definition.backend_task.arn
 
   launch_type   = "FARGATE"
-  desired_count = 3
+  desired_count = var.instances
 
   network_configuration {
     subnets          = ["${data.aws_subnet.public_a.id}"]

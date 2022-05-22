@@ -44,6 +44,12 @@ variable "app_version" {
   default     = "latest"
 }
 
+variable "instances" {
+  description = "Number of Fargate instances to deploy"
+  type        = number
+  default     = 1
+}
+
 output "version" {
   value = var.app_version
 }
