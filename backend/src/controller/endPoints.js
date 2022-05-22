@@ -102,9 +102,22 @@ export const getCaptions = async (
       console.log(
         `User failed to load captions on video ${lectureId}. Response: ${
           lectureInfo.status
-        } | ${JSON.stringify(lectureInfo.data)}`
+        } | URL: ${
+          lectureInfo.data && lectureInfo.data.Urls
+            ? lectureInfo.data.Urls.CaptionDownloadUrl
+            : lectureInfo.data
+        }`
       );
-      return { error: "Captions not found" };
+      auditLogger.info({
+        action: "getCaptions",
+        user: upi,
+        lectureId,
+        result: "No Captions URL",
+      });
+      return {
+        error:
+          "Captions not found. This may be because there are no captions or the video was uploaded through Zoom.",
+      };
     }
     let result = await CaptionFile.findOne({
       where: { lecture_id: lectureId },
