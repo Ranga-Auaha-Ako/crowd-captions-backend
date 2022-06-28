@@ -108,6 +108,7 @@ export const getCaptions = async (
             : lectureInfo.data
         }`
       );
+      // Log to the audit trail the results of this query
       auditLogger.info({
         action: "getCaptions",
         user: upi,
@@ -749,5 +750,58 @@ export const getReports = async (userId) => {
   } catch (err) {
     auditLogger.info({ action: "getReports", user: upi, result: "Error" });
     console.log(err);
+  }
+};
+
+export const deleteSession = async (lecture_id, userId) => {
+  const user = await User.findOne({
+    where: { upi: userId },
+    include: {
+      model: courseOwnerships,
+    },
+  });
+  const session = await CaptionFile.findOne({
+    where: {
+      lecture_id,
+    },
+    include: [{ model: CaptionSentence }],
+    attributes: ["lecture_folder"],
+  });
+  if (!session) return { error: "Session not found" };
+  if (
+    (user.access === 2) |
+    user.courseOwnerships.find(
+      (c) => c.lecture_folder === session.lecture_folder
+    )
+  ) {
+    // If user is superuser or owns the session, delete the session
+    debugger;
+    await CaptionSentence.destroy({
+      where: {
+        id: { [Op.in]: session.CaptionSentences.map((s) => s.id) },
+      },
+    });
+    await CaptionFile.destroy({
+      where: {
+        lecture_id,
+      },
+    });
+    auditLogger.info({
+      action: "deleteSession",
+      user: userId,
+      lecture_id,
+      result: "Success",
+    });
+    return {
+      message: "Session deleted",
+    };
+  } else {
+    auditLogger.info({
+      action: "deleteSession",
+      user: userId,
+      lecture_id,
+      result: "NoPermissions",
+    });
+    return { error: "User does not own the session, or is not an admin" };
   }
 };

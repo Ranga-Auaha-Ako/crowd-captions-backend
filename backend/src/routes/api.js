@@ -35,6 +35,7 @@ const {
   blocks,
   getReports,
   getUser,
+  deleteSession,
 } = require("../controller/endPoints");
 
 // Middleware to ensure authentication
@@ -149,6 +150,18 @@ router.post("/report", isAuthenticated, async (req, res) => {
 router.get("/getReport", async (req, res) => {
   await getReports(req.user.upi).then((result) => {
     return res.json(result);
+  });
+});
+
+router.post("/deleteSession", async (req, res) => {
+  const { id } = req.body;
+  console.log(id);
+  await deleteSession(id, req.user.upi).then((result) => {
+    if (typeof result == String) {
+      return res.send(result);
+    } else {
+      return res.json(result);
+    }
   });
 });
 
