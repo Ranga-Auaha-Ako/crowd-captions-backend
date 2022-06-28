@@ -1,21 +1,34 @@
 resource "aws_db_instance" "default" {
-  allocated_storage      = 20
-  engine                 = "postgres"
-  engine_version         = "13.4"
-  instance_class         = "db.t4g.micro"
-  username               = replace(var.app_name, "/[^a-zA-Z0-9]/", "")
-  password               = local.db_creds.password
-  db_name                = replace(var.app_name, "/[^a-zA-Z0-9]/", "")
-  parameter_group_name   = "default.postgres13"
-  db_subnet_group_name   = aws_db_subnet_group.default.name
-  vpc_security_group_ids = ["${aws_security_group.rds_default.id}"]
-  publicly_accessible    = false
-  skip_final_snapshot    = true
+  identifier                   = "${var.app_name}-${terraform.workspace == "default" ? "staging" : terraform.workspace}"
+  allocated_storage            = 20
+  engine                       = "postgres"
+  engine_version               = "13.4"
+  instance_class               = "db.t4g.micro"
+  username                     = replace(var.app_name, "/[^a-zA-Z0-9]/", "")
+  password                     = local.db_creds.password
+  db_name                      = replace(var.app_name, "/[^a-zA-Z0-9]/", "")
+  parameter_group_name         = "default.postgres13"
+  db_subnet_group_name         = aws_db_subnet_group.default.name
+  vpc_security_group_ids       = ["${aws_security_group.rds_default.id}"]
+  publicly_accessible          = false
+  skip_final_snapshot          = false
+  final_snapshot_identifier    = "${var.app_name}-${terraform.workspace == "default" ? "staging" : terraform.workspace}-backup"
+  performance_insights_enabled = true
+  monitoring_interval          = 0
+  deletion_protection          = terraform.workspace == "default" ? false : true
+  prevent_destory              = terraform.workspace == "default" ? false : true
+  max_allocated_storage        = 100
+  backup_window                = "11:00-11:59"         // UTC
+  maintenance_window           = "mon:15:30-mon:16:00" // UTC
 
   depends_on = [
     aws_db_subnet_group.default,
     aws_security_group.rds_default
   ]
+
+  tags = {
+    BackupPlan = aws_backup_plan.backups.name
+  }
 }
 
 resource "aws_db_subnet_group" "default" {

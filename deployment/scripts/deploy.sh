@@ -1,7 +1,14 @@
 #!/bin/sh
+workspace=$(terraform workspace show)
+
 if [ $# -eq 0 ]
   then
-    terraform refresh
+    if [ "$workspace" = "default" ]
+      then
+        terraform refresh -var-file=staging.tfvars
+      else
+        terraform refresh
+    fi
   else
     terraform refresh -var-file=$1
 fi
