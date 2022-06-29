@@ -71,10 +71,8 @@ app.use(
 //calls router.js, where the program handles all the requests from the frontend
 var router = require("./routes/router");
 var apiRouter = require("./routes/api");
-var adminRouter = require("./routes/admin-router.js");
 
 app.use("/", router);
-app.use("/admin", adminRouter);
 app.use("/api", passport.authenticate("jwt"), apiRouter);
 
 //response for success and fail to connect
