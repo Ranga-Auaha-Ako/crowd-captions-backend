@@ -13,7 +13,7 @@ services:
       - 5432:5432
 
   backend:
-    command: [ "npm", "run", "dev" ]
+    command: ["npm", "run", "dev"]
     environment:
       NODE_ENV: development
       PORT: ${PORT:-8000}
@@ -23,8 +23,6 @@ services:
       POSTGRES_HOST: ${POSTGRES_HOST:-db}
       POSTGRES_PORT: ${POSTGRES_PORT:-5432}
       panopto_host: ${panopto_host}
-      panopto_username: ${panopto_username}
-      panopto_password: ${panopto_password}
       panopto_clientId: ${panopto_clientId}
       panopto_clientSecret: ${panopto_clientSecret}
     ports:
