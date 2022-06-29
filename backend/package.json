@@ -11,10 +11,6 @@
   "author": "team-skrrt-skrrt",
   "license": "MIT",
   "dependencies": {
-    "@adminjs/design-system": "^2.0.2",
-    "@adminjs/express": "^4.0.1",
-    "@adminjs/logger": "^2.1.0",
-    "@adminjs/sequelize": "^2.1.0",
     "@aws-sdk/client-cloudwatch-logs": "^3.58.0",
     "adminjs": "^5.3.3",
     "axios": "^0.27.2",
