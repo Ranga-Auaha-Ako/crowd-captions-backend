@@ -1,7 +1,0 @@
-{
-  "dependencies": {
-    "@aws-sdk/client-cloudwatch-logs": "^3.58.0",
-    "winston": "^3.6.0",
-    "winston-cloudwatch": "^4.0.1"
-  }
-}
