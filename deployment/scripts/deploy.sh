@@ -21,10 +21,16 @@ aws ecr get-login-password --region $region | docker login --username AWS --pass
 # docker build -t $ecr_name ../backend/ --platform linux/amd64
 docker build -t $ecr_name ../backend/ --platform linux/arm64
 docker tag $ecr_name $account_id.dkr.ecr.$region.amazonaws.com/$ecr_name:$version
-docker push $account_id.dkr.ecr.$region.amazonaws.com/$ecr_name:$version
+docker push $account_id.dkr.ecr.$region.amazonaws.com/$ecr_name:$version)
+
 if [ $# -eq 0 ]
   then
-    terraform apply
+    if [ "$workspace" = "default" ]
+      then
+        terraform refresh -var-file=staging.tfvars
+      else
+        terraform refresh
+    fi
   else
-    terraform apply -var-file=$1
+    terraform refresh -var-file=$1
 fi

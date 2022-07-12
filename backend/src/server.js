@@ -69,8 +69,8 @@ app.use(
 );
 
 //calls router.js, where the program handles all the requests from the frontend
-var router = require("./routes/router");
-var apiRouter = require("./routes/api");
+const router = require("./routes/router");
+const apiRouter = require("./routes/api");
 
 app.use("/", router);
 app.use("/api", passport.authenticate("jwt"), apiRouter);

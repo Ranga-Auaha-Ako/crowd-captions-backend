@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const adminApiRouter = require("./api-admin");
 
 // Import models as database relations
 const {
@@ -169,4 +170,5 @@ router.get("/status", async (req, res) => {
   return res.json(await getUser(req, res));
 });
 
+router.use("/admin", adminApiRouter);
 module.exports = router;
