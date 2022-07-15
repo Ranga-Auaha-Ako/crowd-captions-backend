@@ -147,6 +147,8 @@ passport.deserializeUser(async function (serial, done) {
   const u = await User.findByPk(upi);
   if (!u) {
     return done("Please log in again", false);
+  } else if (u.access === -1) {
+    return done("Your account is disabled", false);
   }
   // console.log("refreshToken", refreshToken);
   done(null, { ...u.get({ plain: true }), accessToken, refreshToken });
