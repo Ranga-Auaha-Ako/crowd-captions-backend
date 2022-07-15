@@ -3,8 +3,17 @@ const { Op } = require("sequelize");
 const Sequelize = require("sequelize");
 const router = express.Router();
 
+// Initialise Winston for logging
+const auditLogger = require("../utilities/log");
+
 // Import models as database relations
-const { User, courseOwnerships, CaptionFile } = require("../models");
+const {
+  User,
+  courseOwnerships,
+  CaptionFile,
+  Edit,
+  CaptionSentence,
+} = require("../models");
 
 // Middleware to ensure authentication
 async function isAdmin(req, res, next) {
@@ -39,6 +48,68 @@ router.get("/users/:page?/", isAdmin, async (req, res) => {
       offset: (page - 1) * 10,
     });
     res.json({ data, count });
+  } catch (error) {
+    res.status(500);
+    res.json({ status: "error" });
+  }
+});
+
+router.delete("/users/:id", isAdmin, async (req, res) => {
+  const { id } = req.params;
+  try {
+    const user = await User.findOne({
+      where: { upi: id },
+    });
+    if (!user) {
+      res.status(404);
+      res.json({ status: "User not found" });
+      return;
+    }
+    await user.destroy();
+    res.json({ status: "User deleted" });
+    auditLogger.info({
+      action: "deleteUser",
+      user: req.user.upi,
+      data: {
+        upi: id,
+      },
+      result: "User deleted",
+    });
+  } catch (error) {
+    res.status(500);
+    res.json({ status: "error" });
+  }
+});
+
+router.post("/user/:id/access", isAdmin, async (req, res) => {
+  const { id } = req.params;
+  const { access } = req.body;
+  if (!access || ![0, 1, 2, -1].includes(access)) {
+    res.status(400);
+    res.json({ status: "Bad request" });
+    return;
+  }
+  try {
+    const user = await User.findOne({
+      where: { upi: id },
+    });
+    if (!user) {
+      res.status(404);
+      res.json({ status: "User not found" });
+      return;
+    }
+    user.access = access;
+    await user.save();
+    res.json({ status: "User updated" });
+    auditLogger.info({
+      action: "setUserAccess",
+      user: req.user.upi,
+      data: {
+        upi: id,
+        access: access,
+      },
+      result: "User Access Level Updated",
+    });
   } catch (error) {
     res.status(500);
     res.json({ status: "error" });
@@ -149,11 +220,32 @@ router.post("/ownerships/:id?/", isAdmin, async (req, res) => {
       ownership.lecture_folder = lecture_folder;
       ownership.folder_name = folder_name;
       await ownership.save();
+      auditLogger.info({
+        action: "updateOwnership",
+        user: req.user.upi,
+        data: {
+          id,
+          upi: user,
+          lecture_folder,
+          folder_name,
+        },
+        result: "Ownership Updated",
+      });
     } else {
       const data = await courseOwnerships.create({
         UserUpi: user,
-        lecture_folder: lecture_folder,
-        folder_name: folder_name,
+        lecture_folder,
+        folder_name,
+      });
+      auditLogger.info({
+        action: "createOwnership",
+        user: req.user.upi,
+        data: {
+          upi: user,
+          lecture_folder,
+          folder_name,
+        },
+        result: "Ownership Created",
       });
     }
     res.json({ status: "success" });
@@ -171,9 +263,22 @@ router.delete("/ownerships/:id", isAdmin, async (req, res) => {
     await ownership.destroy();
     res.status(204);
     res.json({ status: "success" });
-  } catch (error) {
+    auditLogger.info({
+      action: "deleteOwnership",
+      user: req.user.upi,
+      data: { id },
+      result: "Ownership Deleted",
+    });
+  } catch (err) {
     res.status(500);
     res.json({ status: "error" });
+    auditLogger.info({
+      action: "deleteOwnership",
+      user: req.user.upi,
+      data: { id },
+      error: err,
+      result: "Ownership Not Deleted",
+    });
   }
 });
 
@@ -269,8 +374,77 @@ router.delete("/videos/:id", isAdmin, async (req, res) => {
     await video.destroy();
     res.status(204);
     res.json({ status: "success" });
+    auditLogger.info({
+      action: "deleteVideo",
+      user: req.user.upi,
+      data: { id },
+      result: "Video Deleted",
+    });
   } catch (error) {
     res.status(500);
+    res.json({ status: "error" });
+    auditLogger.info({
+      action: "deleteVideo",
+      user: req.user.upi,
+      data: { id },
+      error: err,
+      result: "Video Not Deleted",
+    });
+  }
+});
+
+// Fetch recent edits, with lots of metadata attached.
+router.get("/recent/:page?/", isAdmin, async (req, res) => {
+  let { page } = req.params;
+  const { query } = req.query;
+  if (query && query.length > 50) {
+    return res.status(400).json({ status: "error", message: "Query too long" });
+  }
+  if (!page) page = 1;
+  try {
+    const { rows: data, count } = await Edit.findAndCountAll({
+      where: query
+        ? {
+            [Op.or]: {
+              body: { [Op.iLike]: `%${query}%` },
+              "$User.name$": { [Op.iLike]: `%${query}%` },
+              "$User.username$": { [Op.iLike]: `%${query}%` },
+              "$CaptionSentence.body$": { [Op.iLike]: `%${query}%` },
+              "$CaptionSentence.CaptionFile.lecture_folder$": {
+                [Op.iLike]: `%${query}%`,
+              },
+              "$CaptionSentence.CaptionFile.lecture_name$": {
+                [Op.iLike]: `%${query}%`,
+              },
+            },
+          }
+        : {},
+      include: [
+        {
+          model: User,
+          attributes: ["name", "username"],
+          required: true,
+        },
+        {
+          model: CaptionSentence,
+          attributes: ["body", "start"],
+          include: {
+            model: CaptionFile,
+            attributes: ["lecture_name", "lecture_id", "lecture_folder"],
+            required: true,
+          },
+          required: true,
+        },
+      ],
+      attributes: ["body", "approved", "blocked", "createdAt", "id"],
+      order: [["createdAt", "DESC"]],
+      limit: 10,
+      offset: (page - 1) * 10,
+    });
+    res.json({ data, count });
+  } catch (err) {
+    res.status(500);
+    console.log(err);
     res.json({ status: "error" });
   }
 });

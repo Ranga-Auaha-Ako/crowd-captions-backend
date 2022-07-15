@@ -1,6 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const adminApiRouter = require("./api-admin");
+const moderationApiRouter = require("./api-moderation");
 
 // Import models as database relations
 const {
@@ -148,13 +149,13 @@ router.post("/report", isAuthenticated, async (req, res) => {
 });
 
 //insert new report into the database
-router.get("/getReport", async (req, res) => {
+router.get("/getReport", isAuthenticated, async (req, res) => {
   await getReports(req.user.upi).then((result) => {
     return res.json(result);
   });
 });
 
-router.post("/deleteSession", async (req, res) => {
+router.post("/deleteSession", isAuthenticated, async (req, res) => {
   const { id } = req.body;
   console.log(id);
   await deleteSession(id, req.user.upi).then((result) => {
@@ -166,9 +167,10 @@ router.post("/deleteSession", async (req, res) => {
   });
 });
 
-router.get("/status", async (req, res) => {
+router.get("/status", isAuthenticated, async (req, res) => {
   return res.json(await getUser(req, res));
 });
 
 router.use("/admin", adminApiRouter);
+router.use("/mod", moderationApiRouter);
 module.exports = router;

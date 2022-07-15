@@ -587,7 +587,7 @@ export const approvals = async (approved, id, UserUpi) => {
         auditLogger.info({
           action: "postApprovals",
           user: UserUpi,
-          EditId,
+          EditId: id,
           result: "NoPermissions",
         });
         return { error: "User does not own the folder" };
@@ -604,7 +604,7 @@ export const approvals = async (approved, id, UserUpi) => {
       auditLogger.info({
         action: "postApprovals",
         user: UserUpi,
-        EditId,
+        EditId: id,
         result: "Success",
       });
       return {
@@ -734,7 +734,9 @@ export const getReports = async (userId) => {
               include: {
                 model: CaptionFile,
                 attributes: ["lecture_id", "lecture_name"],
+                required: true,
               },
+              required: true,
             },
             { model: User },
             {
