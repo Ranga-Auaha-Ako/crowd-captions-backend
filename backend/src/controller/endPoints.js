@@ -55,15 +55,23 @@ export const getUser = async (req, res) => {
         user: newUser.upi,
         result: "User refreshed token",
       });
-      return { ...newUser, updated: true, newJWT };
+      return {
+        ...newUser,
+        updated: true,
+        newJWT,
+        app_version: process.env.CROWD_CAPTIONS_VERSION,
+      };
     } catch (err) {
       console.error(err);
       res.status(401);
-      return { error: "Token refresh failed" };
+      return {
+        error: "Token refresh failed",
+        app_version: process.env.CROWD_CAPTIONS_VERSION,
+      };
     }
   } else {
     auditLogger.info({ action: "getUser", user: req.user.upi });
-    return req.user;
+    return { ...req.user, app_version: process.env.CROWD_CAPTIONS_VERSION };
   }
 };
 

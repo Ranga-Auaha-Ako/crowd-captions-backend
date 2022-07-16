@@ -50,7 +50,8 @@ resource "aws_ecs_task_definition" "backend_task" {
         { name = "panopto_host", value = var.panopto_host },
         { name = "panopto_clientId", value = local.panopto_creds.client_id },
         { name = "panopto_clientSecret", value = local.panopto_creds.client_secret },
-        { name = "JWT_SECRET", value = data.aws_secretsmanager_secret_version.jwt_secret.secret_string }
+        { name = "JWT_SECRET", value = data.aws_secretsmanager_secret_version.jwt_secret.secret_string },
+        { name = "CROWD_CAPTIONS_VERSION", value = var.app_version }
       ]
     }
   ])
