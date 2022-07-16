@@ -16,7 +16,6 @@ resource "aws_db_instance" "default" {
   performance_insights_enabled = true
   monitoring_interval          = 0
   deletion_protection          = terraform.workspace == "default" ? false : true
-  prevent_destory              = terraform.workspace == "default" ? false : true
   max_allocated_storage        = 100
   backup_window                = "11:00-11:59"         // UTC
   maintenance_window           = "mon:15:30-mon:16:00" // UTC

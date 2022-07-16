@@ -47,12 +47,42 @@ app.use(passport.session());
 // Catch the case where there is an error and log the user out for safety
 app.use(function (err, req, res, next) {
   if (err) {
-    console.log(err);
-    req.logout();
-    if (req.originalUrl == "/login") {
-      next(); // never redirect login page to itself
+    if (err === "Your account is disabled") {
+      res.status(401);
+      return res.send(
+        `
+        <!DOCTYPE html>
+        <html>
+        <head>
+        <title>Your account is disabled</title>
+        <style>
+        body {
+          text-align: center;
+          font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+          font-size: 20px;
+          color: #333333;
+          line-height: 1.4;
+          margin: 0;
+          padding: 0;
+        }
+        </style>
+        </head>
+        <body>
+        <h1>Your account is disabled</h1>
+        <p>Your account is disabled. Please contact an administrator.</p>
+        <a href="mailto:crowdcaptions@auckland.ac.nz">crowdcaptions@auckland.ac.nz</a>
+        </body>
+        </html>
+        `
+      );
     } else {
-      res.redirect("/login");
+      req.logout(() => {
+        if (req.originalUrl == "/login") {
+          next(); // never redirect login page to itself
+        } else {
+          res.redirect("/login");
+        }
+      });
     }
   } else {
     next();
@@ -69,8 +99,8 @@ app.use(
 );
 
 //calls router.js, where the program handles all the requests from the frontend
-var router = require("./routes/router");
-var apiRouter = require("./routes/api");
+const router = require("./routes/router");
+const apiRouter = require("./routes/api");
 
 app.use("/", router);
 app.use("/api", passport.authenticate("jwt"), apiRouter);
