@@ -220,6 +220,7 @@ export const getCaptions = async (
         ],
         separate: true,
       },
+      order: [["start", "ASC"]],
     });
     const captions = caption.map((sentence) => {
       const bestEdit = sentence.Edits.length
