@@ -190,6 +190,7 @@ export const getCaptions = async (
           lecture_id: lectureId,
           lecture_folder: lectureInfo.data.FolderDetails.Id,
           lecture_name: lectureInfo.data.Name,
+          duration: Math.floor(lectureInfo.data.Duration),
         });
         // Then save lecture captions information in captionSentences table
         for await (const sentence of jsonSrt) {
@@ -199,6 +200,49 @@ export const getCaptions = async (
             body: sentence.text,
             CaptionFileLectureId: lectureId,
           });
+        }
+      }
+    } else {
+      // Check to see if we need to delete the captions and regenerate
+      if (
+        result.duration &&
+        Math.floor(lectureInfo.data.Duration) !== result.duration &&
+        !retry
+      ) {
+        // Check to see if we have any edits
+        const captions = await CaptionSentence.findAll({
+          where: {
+            CaptionFileLectureId: { [Op.eq]: lectureId },
+          },
+          attributes: {
+            include: [
+              [
+                // Note the wrapping parentheses in the call below!
+                sequelize.literal(`(SELECT COUNT(*)
+                FROM "Edits"  AS Edit
+                WHERE "CaptionSentence".id = Edit."CaptionSentenceId"
+                  AND Edit.blocked = false)`),
+                "EditCount",
+              ],
+            ],
+          },
+        });
+        if (captions.find((c) => captions[0].dataValues["EditCount"] > 0)) {
+          // We have edits, so we can't delete the captions
+          console.log(
+            `Captions for ${lectureId} have edits, so we can't delete them, but a mismatch was found. Duration: ${
+              result.duration
+            } | Panopto: ${Math.floor(lectureInfo.data.Duration)}`
+          );
+        } else {
+          console.log(`Deleting captions for ${lectureId} and regenerating`);
+          result.destroy();
+          auditLogger.info({
+            action: "autoDeleteSession",
+            lectureId,
+            result: "success",
+          });
+          return await getCaptions(lectureId, upi, { user, logIn }, res, true);
         }
       }
     }
