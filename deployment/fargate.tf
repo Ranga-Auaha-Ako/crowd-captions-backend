@@ -52,7 +52,10 @@ resource "aws_ecs_task_definition" "backend_task" {
         { name = "panopto_clientSecret", value = local.panopto_creds.client_secret },
         { name = "JWT_SECRET", value = data.aws_secretsmanager_secret_version.jwt_secret.secret_string },
         { name = "CROWD_CAPTIONS_VERSION", value = var.app_version }
-      ]
+      ],
+      linuxParameters = {
+        initProcessEnabled = true
+      }
     }
   ])
   #   volume {
@@ -71,9 +74,10 @@ resource "aws_ecs_cluster" "backend_cluster" {
 resource "aws_ecs_service" "backend_service" {
   name = "backend_service_${var.app_name}_${terraform.workspace == "default" ? "staging" : terraform.workspace}"
 
-  cluster          = aws_ecs_cluster.backend_cluster.id
-  platform_version = "1.4.0"
-  task_definition  = aws_ecs_task_definition.backend_task.arn
+  cluster                = aws_ecs_cluster.backend_cluster.id
+  platform_version       = "1.4.0"
+  task_definition        = aws_ecs_task_definition.backend_task.arn
+  enable_execute_command = true
 
   launch_type   = "FARGATE"
   desired_count = var.instances

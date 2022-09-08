@@ -39,7 +39,18 @@ resource "aws_iam_policy" "fargateTask" {
           "${aws_cloudwatch_log_group.audit.arn}",
           "${aws_cloudwatch_log_group.audit.arn}:log-stream:*"
         ]
-      }
+      },
+      {
+        Effect = "Allow",
+        Action = [
+          "ssmmessages:CreateControlChannel",
+          "ssmmessages:CreateDataChannel",
+          "ssmmessages:OpenControlChannel",
+          "ssmmessages:OpenDataChannel"
+        ],
+        Resource = "*"
+      },
+
     ]
   })
 }
