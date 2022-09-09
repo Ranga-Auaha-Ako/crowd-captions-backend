@@ -29,6 +29,7 @@ const {
 export const getUser = async (req, res) => {
   // First see if we need to refresh the token
   const tokenData = jwt.decode(req.user.accessToken);
+  let additionalResData = {};
   if (req.user.refreshToken && tokenData && tokenData.exp < Date.now() / 1000) {
     // We need to refresh the Panopto token!
     try {
@@ -55,11 +56,9 @@ export const getUser = async (req, res) => {
         user: newUser.upi,
         result: "User refreshed token",
       });
-      return {
-        ...newUser,
+      additionalResData = {
         updated: true,
         newJWT,
-        app_version: process.env.CROWD_CAPTIONS_VERSION,
       };
     } catch (err) {
       console.error(err);
@@ -71,7 +70,18 @@ export const getUser = async (req, res) => {
     }
   } else {
     auditLogger.info({ action: "getUser", user: req.user.upi });
-    return { ...req.user, app_version: process.env.CROWD_CAPTIONS_VERSION };
+    // Get user stats
+    const editsCount = await Edit.count({
+      where: { UserUpi: req.user.upi, blocked: false },
+    });
+    return {
+      ...req.user,
+      ...additionalResData,
+      stats: {
+        edits: editsCount,
+      },
+      app_version: process.env.CROWD_CAPTIONS_VERSION,
+    };
   }
 };
 

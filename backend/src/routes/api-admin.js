@@ -1,6 +1,5 @@
 const express = require("express");
 const { Op } = require("sequelize");
-const Sequelize = require("sequelize");
 const router = express.Router();
 
 // Initialise Winston for logging
@@ -8,6 +7,7 @@ const auditLogger = require("../utilities/log");
 
 // Import models as database relations
 const {
+  sequelize,
   User,
   courseOwnerships,
   CaptionFile,
@@ -42,13 +42,30 @@ router.get("/users/:page?/", isAdmin, async (req, res) => {
   try {
     const count = await User.count();
     const data = await User.findAll({
-      attributes: ["upi", "name", "username", "access"],
-      order: [["createdAt", "DESC"]],
+      attributes: [
+        "upi",
+        "name",
+        "username",
+        "access",
+        [
+          // Note the wrapping parentheses in the call below!
+          sequelize.literal(`(SELECT COUNT(*)
+          FROM "Edits"  AS Edit
+          WHERE "User".upi = Edit."UserUpi"
+            AND Edit.blocked = false)`),
+          "EditCount",
+        ],
+      ],
+      order: [
+        ["access", "DESC"],
+        [sequelize.col("EditCount"), "DESC"],
+      ],
       limit: 10,
       offset: (page - 1) * 10,
     });
     res.json({ data, count });
   } catch (error) {
+    console.log(error);
     res.status(500);
     res.json({ status: "error" });
   }
@@ -84,7 +101,7 @@ router.delete("/users/:id", isAdmin, async (req, res) => {
 router.post("/user/:id/access", isAdmin, async (req, res) => {
   const { id } = req.params;
   const { access } = req.body;
-  if (!access || ![0, 1, 2, -1].includes(access)) {
+  if (access === undefined || ![0, 1, 2, -1].includes(access)) {
     res.status(400);
     res.json({ status: "Bad request" });
     return;
@@ -302,7 +319,7 @@ router.get("/folders/search/:page?/", isAdmin, async (req, res) => {
       },
       attributes: [
         [
-          Sequelize.fn("DISTINCT", Sequelize.col("lecture_folder")),
+          sequelize.fn("DISTINCT", sequelize.col("lecture_folder")),
           "lecture_folder",
         ],
         "createdAt",
