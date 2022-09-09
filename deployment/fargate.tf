@@ -20,7 +20,7 @@ resource "aws_ecs_task_definition" "backend_task" {
 
   container_definitions = jsonencode([
     {
-      name      = "${var.app_name}_container_${terraform.workspace == "default" ? "staging" : terraform.workspace}",
+      name      = local.container_name,
       image     = "${aws_ecr_repository.ecr_repo.repository_url}:${var.app_version}",
       memory    = 512,
       essential = true,
@@ -110,4 +110,16 @@ resource "aws_cloudwatch_log_group" "default" {
 
 resource "aws_cloudwatch_log_group" "audit" {
   name = "${replace(var.app_name, "/[^a-zA-Z0-9]/", "")}-${terraform.workspace == "default" ? "staging" : terraform.workspace}"
+}
+
+output "cluster" {
+  value = aws_ecs_cluster.backend_cluster.name
+}
+
+locals {
+  container_name = "${var.app_name}_container_${terraform.workspace == "default" ? "staging" : terraform.workspace}"
+}
+
+output "container_name" {
+  value = local.container_name
 }
