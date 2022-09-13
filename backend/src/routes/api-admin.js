@@ -39,6 +39,10 @@ async function isAdmin(req, res, next) {
 router.get("/users/:page?/", isAdmin, async (req, res) => {
   let { page } = req.params;
   if (!page) page = 1;
+  let { limit } = req.query;
+  if (!limit) limit = 10;
+  else limit = Math.min(parseInt(limit), 100);
+  if (limit === -1) limit = 100;
   try {
     const count = await User.count();
     const data = await User.findAll({
@@ -60,8 +64,8 @@ router.get("/users/:page?/", isAdmin, async (req, res) => {
         ["access", "DESC"],
         [sequelize.col("EditCount"), "DESC"],
       ],
-      limit: 10,
-      offset: (page - 1) * 10,
+      limit,
+      offset: (page - 1) * limit,
     });
     res.json({ data, count });
   } catch (error) {
@@ -136,6 +140,10 @@ router.post("/user/:id/access", isAdmin, async (req, res) => {
 router.get("/users/search/:page?/", isAdmin, async (req, res) => {
   let { page } = req.params;
   const { query } = req.query;
+  let { limit } = req.query;
+  if (!limit) limit = 10;
+  else limit = Math.min(parseInt(limit), 100);
+  if (limit === -1) limit = 100;
   if (!query) {
     return res
       .status(400)
@@ -155,8 +163,8 @@ router.get("/users/search/:page?/", isAdmin, async (req, res) => {
       },
       attributes: ["upi", "name", "username", "access"],
       order: [["createdAt", "DESC"]],
-      limit: 10,
-      offset: (page - 1) * 10,
+      limit,
+      offset: (page - 1) * limit,
     });
     res.json({ data, count });
   } catch (error) {
@@ -168,6 +176,10 @@ router.get("/users/search/:page?/", isAdmin, async (req, res) => {
 router.get("/ownerships/:page?/", isAdmin, async (req, res) => {
   let { page } = req.params;
   if (!page) page = 1;
+  let { limit } = req.query;
+  if (!limit) limit = 10;
+  else limit = Math.min(parseInt(limit), 100);
+  if (limit === -1) limit = 100;
   try {
     const count = await courseOwnerships.count();
     const data = await courseOwnerships.findAll({
@@ -187,8 +199,8 @@ router.get("/ownerships/:page?/", isAdmin, async (req, res) => {
         ],
       ],
       order: [["createdAt", "DESC"]],
-      limit: 10,
-      offset: (page - 1) * 10,
+      limit,
+      offset: (page - 1) * limit,
       include: {
         model: User,
         attributes: ["upi", "name", "username", "access"],
@@ -203,6 +215,10 @@ router.get("/ownerships/:page?/", isAdmin, async (req, res) => {
 
 router.get("/ownerships/search/:page?/", isAdmin, async (req, res) => {
   let { page } = req.params;
+  let { limit } = req.query;
+  if (!limit) limit = 10;
+  else limit = Math.min(parseInt(limit), 100);
+  if (limit === -1) limit = 100;
   const { query } = req.query;
   if (!query) {
     return res
@@ -241,8 +257,8 @@ router.get("/ownerships/search/:page?/", isAdmin, async (req, res) => {
         ],
       ],
       order: [["createdAt", "DESC"]],
-      limit: 10,
-      offset: (page - 1) * 10,
+      limit,
+      offset: (page - 1) * limit,
       include: {
         model: User,
         attributes: ["upi", "name", "username", "access"],
@@ -330,6 +346,10 @@ router.delete("/ownerships/:id", isAdmin, async (req, res) => {
 router.get("/folders/search/:page?/", isAdmin, async (req, res) => {
   let { page } = req.params;
   const { query } = req.query;
+  let { limit } = req.query;
+  if (!limit) limit = 10;
+  else limit = Math.min(parseInt(limit), 100);
+  if (limit === -1) limit = 100;
   if (!query) {
     return res
       .status(400)
@@ -353,8 +373,8 @@ router.get("/folders/search/:page?/", isAdmin, async (req, res) => {
         "createdAt",
       ],
       order: [["createdAt", "DESC"]],
-      limit: 10,
-      offset: (page - 1) * 10,
+      limit,
+      offset: (page - 1) * limit,
     });
     const data = await Promise.all(
       rows.map(async (row) => {
@@ -378,6 +398,10 @@ router.get("/folders/search/:page?/", isAdmin, async (req, res) => {
 router.get("/videos/:page?/", isAdmin, async (req, res) => {
   let { page } = req.params;
   const { query } = req.query;
+  let { limit } = req.query;
+  if (!limit) limit = 10;
+  else limit = Math.min(parseInt(limit), 100);
+  if (limit === -1) limit = 100;
   if (query && query.length > 50) {
     return res.status(400).json({ status: "error", message: "Query too long" });
   }
@@ -393,10 +417,23 @@ router.get("/videos/:page?/", isAdmin, async (req, res) => {
             },
           }
         : {},
-      attributes: ["lecture_name", "lecture_id", "lecture_folder", "createdAt"],
+      attributes: [
+        "lecture_name",
+        "lecture_id",
+        "lecture_folder",
+        "createdAt",
+        [
+          sequelize.literal(`(SELECT COUNT(*)
+            FROM "Edits" AS Edit
+              JOIN "CaptionSentences" CaptionSentence ON CaptionSentence.id = Edit."CaptionSentenceId"
+            WHERE "CaptionFile".lecture_id = CaptionSentence."CaptionFileLectureId"
+            AND Edit.blocked = false)`),
+          "EditCount",
+        ],
+      ],
       order: [["createdAt", "DESC"]],
-      limit: 10,
-      offset: (page - 1) * 10,
+      limit,
+      offset: (page - 1) * limit,
     });
     res.json({ data, count });
   } catch (error) {
@@ -442,6 +479,10 @@ router.delete("/videos/:id", isAdmin, async (req, res) => {
 router.get("/recent/:page?/", isAdmin, async (req, res) => {
   let { page } = req.params;
   const { query } = req.query;
+  let { limit } = req.query;
+  if (!limit) limit = 10;
+  else limit = Math.min(parseInt(limit), 100);
+  if (limit === -1) limit = 100;
   if (query && query.length > 50) {
     return res.status(400).json({ status: "error", message: "Query too long" });
   }
@@ -483,8 +524,8 @@ router.get("/recent/:page?/", isAdmin, async (req, res) => {
       ],
       attributes: ["body", "approved", "blocked", "createdAt", "id"],
       order: [["createdAt", "DESC"]],
-      limit: 10,
-      offset: (page - 1) * 10,
+      limit,
+      offset: (page - 1) * limit,
     });
     res.json({ data, count });
   } catch (err) {
