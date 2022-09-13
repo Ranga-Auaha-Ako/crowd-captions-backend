@@ -171,7 +171,21 @@ router.get("/ownerships/:page?/", isAdmin, async (req, res) => {
   try {
     const count = await courseOwnerships.count();
     const data = await courseOwnerships.findAll({
-      attributes: ["UserUpi", "lecture_folder", "folder_name", "id"],
+      attributes: [
+        "UserUpi",
+        "lecture_folder",
+        "folder_name",
+        "id",
+        [
+          sequelize.literal(`(SELECT COUNT(*)
+          FROM "Edits" AS Edit
+            JOIN "CaptionSentences" CaptionSentence ON CaptionSentence.id = Edit."CaptionSentenceId"
+            JOIN "CaptionFiles" CaptionFile ON CaptionFile."lecture_id" = CaptionSentence."CaptionFileLectureId"
+          WHERE "courseOwnerships".lecture_folder = CaptionFile."lecture_folder"
+          AND Edit.blocked = false)`),
+          "EditCount",
+        ],
+      ],
       order: [["createdAt", "DESC"]],
       limit: 10,
       offset: (page - 1) * 10,
@@ -211,7 +225,21 @@ router.get("/ownerships/search/:page?/", isAdmin, async (req, res) => {
           "$User.username$": { [Op.iLike]: `%${query}%` },
         },
       },
-      attributes: ["UserUpi", "lecture_folder", "folder_name", "id"],
+      attributes: [
+        "UserUpi",
+        "lecture_folder",
+        "folder_name",
+        "id",
+        [
+          sequelize.literal(`(SELECT COUNT(*)
+        FROM "Edits" AS Edit
+          JOIN "CaptionSentences" CaptionSentence ON CaptionSentence.id = Edit."CaptionSentenceId"
+          JOIN "CaptionFiles" CaptionFile ON CaptionFile."lecture_id" = CaptionSentence."CaptionFileLectureId"
+        WHERE "courseOwnerships".lecture_folder = CaptionFile."lecture_folder"
+        AND Edit.blocked = false)`),
+          "EditCount",
+        ],
+      ],
       order: [["createdAt", "DESC"]],
       limit: 10,
       offset: (page - 1) * 10,
