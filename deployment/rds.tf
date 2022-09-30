@@ -2,7 +2,7 @@ resource "aws_db_instance" "default" {
   identifier                   = "${var.app_name}-${terraform.workspace == "default" ? "staging" : terraform.workspace}"
   allocated_storage            = 20
   engine                       = "postgres"
-  engine_version               = "13.4"
+  engine_version               = "13.7"
   instance_class               = "db.t4g.micro"
   username                     = replace(var.app_name, "/[^a-zA-Z0-9]/", "")
   password                     = local.db_creds.password
